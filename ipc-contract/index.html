@@ -1,0 +1,1890 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Yumi — a personal, open desktop GUI for the Claude Code CLI (Tauri 2 + React 19). Architecture, internals, IPC contract, and reference.">
+      
+      
+        <meta name="author" content="Arne Van Den Abbeele">
+      
+      
+        <link rel="canonical" href="https://arnevda-ap.github.io/yumi-wiki/ipc-contract/">
+      
+      
+        <link rel="prev" href="../frontend-react/">
+      
+      
+        <link rel="next" href="../stream-pipeline/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>IPC Contract - Yumi Wiki</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#ipc-contract" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Yumi Wiki" class="md-header__button md-logo" aria-label="Yumi Wiki" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Yumi Wiki
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              IPC Contract
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ArneVDA-AP/yumi-wiki" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ArneVDA-AP/yumi-wiki
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Yumi Wiki" class="md-nav__button md-logo" aria-label="Yumi Wiki" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Yumi Wiki
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ArneVDA-AP/yumi-wiki" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ArneVDA-AP/yumi-wiki
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backend-rust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend (Rust)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../frontend-react/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frontend (React)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IPC Contract
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IPC Contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The rule
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#claudeevent-the-stream-event-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ClaudeEvent — the stream event model
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ClaudeEvent — the stream event model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#envelope-sibling-event-payloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Envelope &amp; sibling event payloads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#other-key-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Other key types
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tauri-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tauri commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tauri commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#claude-lifecycle-commandsclauders" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Claude lifecycle — commands/claude.rs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#settings-commandssettingsrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Settings — commands/settings.rs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sessions-analytics-commandsdbrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sessions / analytics — commands/db.rs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#projects-filesystem-commandsinfors-commandsfsrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Projects &amp; filesystem — commands/info.rs, commands/fs.rs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#git-commandsgitrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Git — commands/git.rs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#background-agents-agentsrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Background agents — agents.rs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#event-channels-rust-react" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event channels (Rust → React)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stream-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stream Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-and-persistence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data & Persistence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subsystems
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Subsystems
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-bash-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Bash Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../thinking-proxy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Thinking Proxy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../yumi-plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Yumi Plugin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../features-and-shortcuts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features & Shortcuts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../build-run-test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Build, Run & Test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reliability-and-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reliability & Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tags/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tags
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The rule
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#claudeevent-the-stream-event-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ClaudeEvent — the stream event model
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ClaudeEvent — the stream event model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#envelope-sibling-event-payloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Envelope &amp; sibling event payloads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#other-key-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Other key types
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tauri-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tauri commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tauri commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#claude-lifecycle-commandsclauders" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Claude lifecycle — commands/claude.rs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#settings-commandssettingsrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Settings — commands/settings.rs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sessions-analytics-commandsdbrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sessions / analytics — commands/db.rs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#projects-filesystem-commandsinfors-commandsfsrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Projects &amp; filesystem — commands/info.rs, commands/fs.rs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#git-commandsgitrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Git — commands/git.rs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#background-agents-agentsrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Background agents — agents.rs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#event-channels-rust-react" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event channels (Rust → React)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  <nav class="md-tags" >
+    
+      
+      
+      
+      
+        <a href="../tags/#tag:contract" class="md-tag">contract</a>
+      
+    
+      
+      
+      
+      
+        <a href="../tags/#tag:ipc" class="md-tag">ipc</a>
+      
+    
+      
+      
+      
+      
+        <a href="../tags/#tag:reference" class="md-tag">reference</a>
+      
+    
+      
+      
+      
+      
+        <a href="../tags/#tag:stream-json" class="md-tag">stream-json</a>
+      
+    
+  </nav>
+
+
+  
+  
+
+
+<h1 id="ipc-contract">IPC Contract<a class="headerlink" href="#ipc-contract" title="Permanent link">&para;</a></h1>
+<p><em>The frozen Rust⇄React interface: the <code>ClaudeEvent</code> union, the Tauri command surface, the event channels, and the <code>ipc.ts</code> wrappers.</em></p>
+<hr />
+<h2 id="the-rule">The rule<a class="headerlink" href="#the-rule" title="Permanent link">&para;</a></h2>
+<p><code>src/lib/types.ts</code> and <code>src/lib/ipc.ts</code> are <strong>authoritative</strong> for all shapes and
+names. Rust mirrors them:</p>
+<ul>
+<li>Every Rust DTO and the <code>ClaudeEvent</code> enum use <code>#[serde(rename_all = "camelCase")]</code>, so the JSON the frontend receives already has camelCase field names (<code>claudeSessionId</code>, <code>inputTokens</code>, <code>durationMs</code>).</li>
+<li>Tauri command <strong>argument</strong> names are camelCase on the JS side (<code>sessionId</code>, not <code>session_id</code>) — <code>ipc.ts</code> passes them that way.</li>
+<li>The <code>ClaudeEvent</code> enum serializes with <code>#[serde(tag = "kind", ...)]</code>, so each event is <code>{ "kind": "...", ... }</code> — matching the discriminated union in <code>types.ts</code>.</li>
+</ul>
+<hr />
+<h2 id="claudeevent-the-stream-event-model"><code>ClaudeEvent</code> — the stream event model<a class="headerlink" href="#claudeevent-the-stream-event-model" title="Permanent link">&para;</a></h2>
+<p>The discriminated union emitted by Rust (<code>claude/stream_parser.rs</code>) and consumed by
+the reducer (<code>src/lib/streamParse.ts</code>). Each variant is tagged by <code>kind</code>:</p>
+<table>
+<thead>
+<tr>
+<th><code>kind</code></th>
+<th>Fields</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>system</code></td>
+<td><code>subtype, model?, claudeSessionId?, cwd?, tools?, data?</code></td>
+<td>a <code>type:"system"</code> line (init/hook/etc.); carries the real session uuid</td>
+</tr>
+<tr>
+<td><code>assistant_text</code></td>
+<td><code>text</code></td>
+<td>a <strong>complete</strong> assistant text block</td>
+</tr>
+<tr>
+<td><code>assistant_thinking</code></td>
+<td><code>text</code></td>
+<td>a <strong>complete</strong> thinking block</td>
+</tr>
+<tr>
+<td><code>tool_use</code></td>
+<td><code>id, name, input</code></td>
+<td>the model invoked a tool</td>
+</tr>
+<tr>
+<td><code>tool_result</code></td>
+<td><code>toolUseId, content, isError?</code></td>
+<td>a tool's result (matched back to its <code>tool_use</code>)</td>
+</tr>
+<tr>
+<td><code>text_delta</code></td>
+<td><code>text</code></td>
+<td>a streamed <strong>partial</strong> text token (live typing)</td>
+</tr>
+<tr>
+<td><code>thinking_delta</code></td>
+<td><code>text</code></td>
+<td>a streamed partial thinking token</td>
+</tr>
+<tr>
+<td><code>usage</code></td>
+<td><code>inputTokens?, outputTokens?, cacheRead?, cacheCreation?</code></td>
+<td>token usage snapshot</td>
+</tr>
+<tr>
+<td><code>rate_limit</code></td>
+<td><code>data</code></td>
+<td>a <code>rate_limit_event</code> line (raw payload)</td>
+</tr>
+<tr>
+<td><code>turn_done</code></td>
+<td><code>stopReason?, inputTokens?, outputTokens?, cacheRead?, cacheCreation?</code></td>
+<td>terminal <code>message_delta</code> — <strong>finalizes the turn</strong> before the late <code>result</code></td>
+</tr>
+<tr>
+<td><code>result</code></td>
+<td><code>isError, durationMs?, numTurns?, totalCostUsd?, resultText?, usage?, modelUsage?</code></td>
+<td>the final <code>result</code> line (cost + totals)</td>
+</tr>
+<tr>
+<td><code>error</code></td>
+<td><code>message</code></td>
+<td>an error line</td>
+</tr>
+<tr>
+<td><code>raw</code></td>
+<td><code>line</code></td>
+<td>unparseable or unknown line — <strong>non-lossy fallback</strong></td>
+</tr>
+</tbody>
+</table>
+<p>How each <code>kind</code> is produced is detailed on the <a href="../stream-pipeline/">Stream Pipeline</a> page; how each mutates a message is in the reducer table there.</p>
+<h3 id="envelope-sibling-event-payloads">Envelope &amp; sibling event payloads<a class="headerlink" href="#envelope-sibling-event-payloads" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nx">ClaudeEventEnvelope</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sessionId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">event</span><span class="o">:</span><span class="w"> </span><span class="kt">ClaudeEvent</span><span class="w"> </span><span class="p">}</span><span class="w">   </span><span class="c1">// &quot;claude-event&quot;</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nx">ClaudeComplete</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sessionId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">code</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="w"> </span><span class="p">}</span><span class="w">         </span><span class="c1">// &quot;claude-complete&quot;</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nx">ClaudeErrorEvt</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sessionId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">}</span><span class="w">      </span><span class="c1">// &quot;claude-error&quot;</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nx">ClaudeSessionId</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sessionId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">claudeSessionId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="c1">// &quot;claude-session-id&quot;</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nx">ClaudeCost</span><span class="w">          </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sessionId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">cost?</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">,</span><span class="w"> </span><span class="nx">durationMs?</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="c1">// &quot;claude-cost&quot;</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nx">BashOutput</span><span class="w">          </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sessionId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">chunk</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">}</span><span class="w">        </span><span class="c1">// &quot;bash-output&quot;</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="nx">AgentEvent</span><span class="w">          </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">agent</span><span class="o">:</span><span class="w"> </span><span class="kt">AgentInfo</span><span class="w"> </span><span class="p">}</span><span class="w">                        </span><span class="c1">// &quot;agent-event&quot;</span>
+</code></pre></div>
+<h3 id="other-key-types">Other key types<a class="headerlink" href="#other-key-types" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>Settings = { provider, model, theme, vimMode, thinking, showRateLimit, bashMonitor, autoCompactThreshold }</code>. <code>DEFAULT_SETTINGS</code>: <code>provider:"claude"</code>, <code>model:"claude-opus-4-8"</code>, <code>theme:"oled"</code>, <code>vimMode:false</code>, <code>thinking:true</code>, <code>showRateLimit:true</code>, <code>bashMonitor:false</code>, <code>autoCompactThreshold:0.75</code>.</li>
+<li><code>SpawnOpts = { sessionId, cwd, prompt, model, provider?, resumeId?, thinking?, bashMonitor? }</code>.</li>
+<li><code>MessageBlock</code> = a <code>text</code> | <code>thinking</code> | <code>tool_use</code> block (the tool block carries <code>id, name, input, result?, isError?, running?, live?</code>). <code>ChatMessage = { id, role, blocks[], streaming?, cost?, durationMs? }</code>.</li>
+<li><code>SessionMeta</code>, <code>SessionDetail</code>, <code>StoredMessage</code>, <code>Analytics</code> (+ <code>ByModel</code>/<code>ByDate</code>), <code>RecentProject</code>, <code>GitStatus</code>, <code>DirEntry</code>, <code>UsageLimits</code>, <code>AgentInfo</code>, <code>ProviderInfo</code>/<code>PROVIDERS</code>. (Field lists in <code>types.ts</code>; storage shapes on <a href="../data-and-persistence/">Data &amp; Persistence</a>.)</li>
+</ul>
+<hr />
+<h2 id="tauri-commands">Tauri commands<a class="headerlink" href="#tauri-commands" title="Permanent link">&para;</a></h2>
+<p>The complete <code>#[tauri::command]</code> surface (registered in <code>lib.rs</code>), with the
+matching <code>ipc.ts</code> wrapper. <code>app: AppHandle</code> is implicit and omitted below.</p>
+<h3 id="claude-lifecycle-commandsclauders">Claude lifecycle — <code>commands/claude.rs</code><a class="headerlink" href="#claude-lifecycle-commandsclauders" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Args</th>
+<th>Returns</th>
+<th><code>ipc.ts</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>get_claude_version</code></td>
+<td>—</td>
+<td><code>String</code></td>
+<td><code>getClaudeVersion()</code></td>
+</tr>
+<tr>
+<td><code>spawn_claude</code></td>
+<td><code>opts: SpawnOpts</code></td>
+<td><code>String</code> (session id)</td>
+<td><code>spawnClaude(opts)</code></td>
+</tr>
+<tr>
+<td><code>interrupt_claude</code></td>
+<td><code>sessionId: String</code></td>
+<td><code>()</code></td>
+<td><code>interruptClaude(sessionId)</code></td>
+</tr>
+<tr>
+<td><code>get_usage_limits</code></td>
+<td><code>force: bool</code></td>
+<td><code>UsageLimits</code> <em>(stub — empty)</em></td>
+<td><code>getUsageLimits(force?)</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="settings-commandssettingsrs">Settings — <code>commands/settings.rs</code><a class="headerlink" href="#settings-commandssettingsrs" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Args</th>
+<th>Returns</th>
+<th><code>ipc.ts</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>get_settings</code></td>
+<td>—</td>
+<td><code>Settings</code></td>
+<td><code>getSettings()</code></td>
+</tr>
+<tr>
+<td><code>save_settings</code></td>
+<td><code>settings: Settings</code></td>
+<td><code>()</code></td>
+<td><code>saveSettings(settings)</code></td>
+</tr>
+<tr>
+<td><code>set_theme</code></td>
+<td><code>theme: String</code></td>
+<td><code>()</code></td>
+<td><code>setTheme(theme)</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="sessions-analytics-commandsdbrs">Sessions / analytics — <code>commands/db.rs</code><a class="headerlink" href="#sessions-analytics-commandsdbrs" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Args</th>
+<th>Returns</th>
+<th><code>ipc.ts</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>db_list_sessions</code></td>
+<td>—</td>
+<td><code>Vec&lt;SessionMeta&gt;</code></td>
+<td><code>dbListSessions()</code></td>
+</tr>
+<tr>
+<td><code>db_get_session</code></td>
+<td><code>id: String</code></td>
+<td><code>SessionDetail</code></td>
+<td><code>dbGetSession(id)</code></td>
+</tr>
+<tr>
+<td><code>db_save_session</code></td>
+<td><code>detail: SessionDetail</code></td>
+<td><code>()</code></td>
+<td><code>dbSaveSession(detail)</code></td>
+</tr>
+<tr>
+<td><code>db_delete_session</code></td>
+<td><code>id: String</code></td>
+<td><code>()</code></td>
+<td><code>dbDeleteSession(id)</code></td>
+</tr>
+<tr>
+<td><code>db_get_analytics</code></td>
+<td>—</td>
+<td><code>Analytics</code></td>
+<td><code>dbGetAnalytics()</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="projects-filesystem-commandsinfors-commandsfsrs">Projects &amp; filesystem — <code>commands/info.rs</code>, <code>commands/fs.rs</code><a class="headerlink" href="#projects-filesystem-commandsinfors-commandsfsrs" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Args</th>
+<th>Returns</th>
+<th><code>ipc.ts</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>list_projects</code></td>
+<td>—</td>
+<td><code>Vec&lt;RecentProject&gt;</code></td>
+<td><code>listProjects()</code></td>
+</tr>
+<tr>
+<td><code>add_recent_project</code></td>
+<td><code>path: String</code></td>
+<td><code>()</code></td>
+<td><code>addRecentProject(path)</code></td>
+</tr>
+<tr>
+<td><code>pick_directory</code></td>
+<td>—</td>
+<td><code>Option&lt;String&gt;</code></td>
+<td><code>pickDirectory()</code></td>
+</tr>
+<tr>
+<td><code>list_directory</code></td>
+<td><code>path: String</code></td>
+<td><code>Vec&lt;DirEntry&gt;</code></td>
+<td><code>listDirectory(path)</code></td>
+</tr>
+<tr>
+<td><code>read_text_file</code></td>
+<td><code>path: String</code></td>
+<td><code>String</code></td>
+<td><code>readTextFile(path)</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="git-commandsgitrs">Git — <code>commands/git.rs</code><a class="headerlink" href="#git-commandsgitrs" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Args</th>
+<th>Returns</th>
+<th><code>ipc.ts</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>git_status</code></td>
+<td><code>cwd: String</code></td>
+<td><code>GitStatus</code></td>
+<td><code>gitStatus(cwd)</code></td>
+</tr>
+<tr>
+<td><code>git_diff</code></td>
+<td><code>cwd: String, staged: bool</code></td>
+<td><code>String</code></td>
+<td><code>gitDiff(cwd, staged?)</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="background-agents-agentsrs">Background agents — <code>agents.rs</code><a class="headerlink" href="#background-agents-agentsrs" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Args</th>
+<th>Returns</th>
+<th><code>ipc.ts</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>list_agents</code></td>
+<td>—</td>
+<td><code>Vec&lt;AgentInfo&gt;</code></td>
+<td><code>listAgents()</code></td>
+</tr>
+<tr>
+<td><code>start_agent</code></td>
+<td><code>cwd, prompt, model</code></td>
+<td><code>AgentInfo</code></td>
+<td><code>startAgent(cwd, prompt, model)</code></td>
+</tr>
+<tr>
+<td><code>merge_agent_branch</code></td>
+<td><code>id</code></td>
+<td><code>AgentInfo</code></td>
+<td><code>mergeAgentBranch(id)</code></td>
+</tr>
+<tr>
+<td><code>cancel_agent</code></td>
+<td><code>id</code></td>
+<td><code>AgentInfo</code></td>
+<td><code>cancelAgent(id)</code></td>
+</tr>
+<tr>
+<td><code>remove_agent</code></td>
+<td><code>id</code></td>
+<td><code>()</code></td>
+<td><code>removeAgent(id)</code></td>
+</tr>
+<tr>
+<td><code>agent_diff</code></td>
+<td><code>id</code></td>
+<td><code>String</code></td>
+<td><code>agentDiff(id)</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="event-channels-rust-react">Event channels (Rust → React)<a class="headerlink" href="#event-channels-rust-react" title="Permanent link">&para;</a></h2>
+<p>Emitted via <code>app.emit(...)</code>; subscribed via <code>listen()</code> wrappers in <code>ipc.ts</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Channel</th>
+<th>Payload</th>
+<th>Emitter</th>
+<th><code>ipc.ts</code> subscriber</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>claude-event</code></td>
+<td><code>{sessionId, event}</code></td>
+<td><code>spawner.rs</code></td>
+<td><code>onClaudeEvent(cb)</code></td>
+</tr>
+<tr>
+<td><code>claude-complete</code></td>
+<td><code>{sessionId, code}</code></td>
+<td><code>spawner.rs</code></td>
+<td><code>onClaudeComplete(cb)</code></td>
+</tr>
+<tr>
+<td><code>claude-error</code></td>
+<td><code>{sessionId, message}</code></td>
+<td><code>spawner.rs</code></td>
+<td><code>onClaudeError(cb)</code></td>
+</tr>
+<tr>
+<td><code>claude-session-id</code></td>
+<td><code>{sessionId, claudeSessionId}</code></td>
+<td><code>spawner.rs</code></td>
+<td><code>onClaudeSessionId(cb)</code></td>
+</tr>
+<tr>
+<td><code>claude-cost</code></td>
+<td><code>{sessionId, cost, durationMs}</code></td>
+<td><code>spawner.rs</code></td>
+<td><code>onClaudeCost(cb)</code></td>
+</tr>
+<tr>
+<td><code>bash-output</code></td>
+<td><code>{sessionId, chunk}</code></td>
+<td><code>mcp/monitor.rs</code></td>
+<td><code>onBashOutput(cb)</code></td>
+</tr>
+<tr>
+<td><code>agent-event</code></td>
+<td><code>{agent}</code></td>
+<td><code>agents.rs</code></td>
+<td><code>onAgentEvent(cb)</code></td>
+</tr>
+</tbody>
+</table>
+<p>All subscribers return a Tauri <code>UnlistenFn</code>. The store installs them in
+<code>bootstrap()</code> and routes them to the <code>_on*</code> handlers (see <a href="../frontend-react/">Frontend</a>).</p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../stream-pipeline/">Stream Pipeline</a> — where <code>ClaudeEvent</code>s come from and what they do.</li>
+<li><a href="../backend-rust/">Backend (Rust)</a> — the command implementations.</li>
+<li><a href="../data-and-persistence/">Data &amp; Persistence</a> — <code>SessionMeta</code>/<code>SessionDetail</code>/<code>Analytics</code> storage.</li>
+<li>The live source of truth: <code>yumi/CONTRACT.md</code>.</li>
+</ul>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../frontend-react/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Frontend (React)">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Frontend (React)
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../stream-pipeline/" class="md-footer__link md-footer__link--next" aria-label="Next: Stream Pipeline">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Stream Pipeline
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      © 2026 Arne Van Den Abbeele
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.footer", "search.highlight", "search.suggest", "content.code.copy", "content.tooltips", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,1894 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Yumi — a personal, open desktop GUI for the Claude Code CLI (Tauri 2 + React 19). Architecture, internals, IPC contract, and reference.">
+      
+      
+        <meta name="author" content="Arne Van Den Abbeele">
+      
+      
+        <link rel="canonical" href="https://arnevda-ap.github.io/yumi-wiki/backend-rust/">
+      
+      
+        <link rel="prev" href="../architecture/">
+      
+      
+        <link rel="next" href="../frontend-react/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Backend (Rust) - Yumi Wiki</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#backend-rust" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Yumi Wiki" class="md-header__button md-logo" aria-label="Yumi Wiki" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Yumi Wiki
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Backend (Rust)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ArneVDA-AP/yumi-wiki" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ArneVDA-AP/yumi-wiki
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Yumi Wiki" class="md-nav__button md-logo" aria-label="Yumi Wiki" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Yumi Wiki
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ArneVDA-AP/yumi-wiki" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ArneVDA-AP/yumi-wiki
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend (Rust)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend (Rust)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#app-bootstrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        App bootstrap
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="App bootstrap">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mainrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        main.rs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#librs-pub-fn-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        lib.rs — pub fn run()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#staters-appstate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        state.rs — AppState
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#crash_recoveryrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        crash_recovery.rs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-claude-pipeline-claude" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Claude pipeline (claude/)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Claude pipeline (claude/)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#binaryrs-locating-the-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        binary.rs — locating the CLI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#providerrs-multi-provider-abstraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        provider.rs — multi-provider abstraction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spawnerrs-spawn_claudeapp-opts-resultstringstring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        spawner.rs — spawn_claude(app, opts) -&gt; Result&lt;String,String&gt;
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sessionrs-session-id-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        session.rs — session-id helpers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stream_parserrs-parse_lineline-vecclaudeevent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        stream_parser.rs — parse_line(line) -&gt; Vec&lt;ClaudeEvent&gt;
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxyrs-proxystate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        proxy.rs — ProxyState
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#process-control-processregistryrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Process control (process/registry.rs)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#background-agents-agentsrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Background agents (agents.rs)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bash-monitor-mcpmonitorrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BASH-MONITOR (mcp/monitor.rs)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#command-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command surface
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../frontend-react/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frontend (React)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ipc-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IPC Contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stream-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stream Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-and-persistence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data & Persistence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subsystems
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Subsystems
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-bash-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Bash Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../thinking-proxy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Thinking Proxy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../yumi-plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Yumi Plugin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../features-and-shortcuts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features & Shortcuts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../build-run-test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Build, Run & Test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reliability-and-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reliability & Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tags/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tags
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#app-bootstrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        App bootstrap
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="App bootstrap">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mainrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        main.rs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#librs-pub-fn-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        lib.rs — pub fn run()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#staters-appstate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        state.rs — AppState
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#crash_recoveryrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        crash_recovery.rs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-claude-pipeline-claude" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Claude pipeline (claude/)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Claude pipeline (claude/)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#binaryrs-locating-the-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        binary.rs — locating the CLI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#providerrs-multi-provider-abstraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        provider.rs — multi-provider abstraction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spawnerrs-spawn_claudeapp-opts-resultstringstring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        spawner.rs — spawn_claude(app, opts) -&gt; Result&lt;String,String&gt;
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sessionrs-session-id-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        session.rs — session-id helpers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stream_parserrs-parse_lineline-vecclaudeevent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        stream_parser.rs — parse_line(line) -&gt; Vec&lt;ClaudeEvent&gt;
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxyrs-proxystate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        proxy.rs — ProxyState
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#process-control-processregistryrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Process control (process/registry.rs)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#background-agents-agentsrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Background agents (agents.rs)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bash-monitor-mcpmonitorrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BASH-MONITOR (mcp/monitor.rs)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#command-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command surface
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  <nav class="md-tags" >
+    
+      
+      
+      
+      
+        <a href="../tags/#tag:backend" class="md-tag">backend</a>
+      
+    
+      
+      
+      
+      
+        <a href="../tags/#tag:reference" class="md-tag">reference</a>
+      
+    
+      
+      
+      
+      
+        <a href="../tags/#tag:rust" class="md-tag">rust</a>
+      
+    
+      
+      
+      
+      
+        <a href="../tags/#tag:tauri" class="md-tag">tauri</a>
+      
+    
+  </nav>
+
+
+  
+  
+
+
+<h1 id="backend-rust">Backend (Rust)<a class="headerlink" href="#backend-rust" title="Permanent link">&para;</a></h1>
+<p><em>A module-by-module tour of <code>src-tauri/src</code> — the Tauri host that spawns <code>claude</code>, parses its stream, persists sessions, and runs background agents.</em></p>
+<hr />
+<h2 id="layout">Layout<a class="headerlink" href="#layout" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>src-tauri/src/
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  main.rs              entry point
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  lib.rs               Tauri builder + command registry
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  state.rs             shared AppState
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  crash_recovery.rs    startup cleanup of stale stream logs
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>  agents.rs            background agents (git-worktree isolation)
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>  db.rs                SQLite schema + queries (see Data &amp; Persistence)
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>  process/
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    registry.rs        PID registry + Windows tree-kill
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>  claude/
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    binary.rs          locate the claude binary + version
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    spawner.rs         spawn claude, stream stdout → events
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    session.rs         session-id helpers/validation
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    stream_parser.rs   stream-json → ClaudeEvent (pure)
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    proxy.rs           thinking-proxy launcher
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    provider.rs        multi-provider abstraction
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>  mcp/
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    monitor.rs         BASH-MONITOR: tail temp log → bash-output
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>  commands/
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    claude.rs info.rs db.rs git.rs fs.rs settings.rs
+</code></pre></div>
+<p>A note on the build: spawner/provider/agents are gated <code>#[cfg(not(test))]</code> so that
+<code>cargo test</code> (which can't initialise the WebView2 loader on <code>windows-gnu</code>) still
+compiles and runs the pure unit tests. The crate is <code>[lib] crate-type = ["rlib"]</code>
+— see <a href="../build-run-test/">Build, Run &amp; Test</a>.</p>
+<hr />
+<h2 id="app-bootstrap">App bootstrap<a class="headerlink" href="#app-bootstrap" title="Permanent link">&para;</a></h2>
+<h3 id="mainrs"><code>main.rs</code><a class="headerlink" href="#mainrs" title="Permanent link">&para;</a></h3>
+<p>Entry point; calls <code>yumi_lib::run()</code>. Disables the console window on Windows release builds.</p>
+<h3 id="librs-pub-fn-run"><code>lib.rs</code> — <code>pub fn run()</code><a class="headerlink" href="#librs-pub-fn-run" title="Permanent link">&para;</a></h3>
+<p>Builds the Tauri application:
+1. <code>crash_recovery::cleanup_stale_streams()</code> removes stale <code>yumi-bash-*.log</code> files (&gt; 1 day old) before anything else.
+2. Opens the database (<code>Db::open()</code> → <code>~/.yumi/yumi.db</code>, creates tables if missing).
+3. Creates <code>AppState { registry, proxy, db, agents }</code> as Tauri-managed state.
+4. Registers the <code>tauri-plugin-opener</code> plugin.
+5. Registers <strong>all</strong> commands via <code>generate_handler![]</code> (see the table below).</p>
+<h3 id="staters-appstate"><code>state.rs</code> — <code>AppState</code><a class="headerlink" href="#staters-appstate" title="Permanent link">&para;</a></h3>
+<p>The shared, Tauri-managed state struct:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>registry</code></td>
+<td><code>ProcessRegistry</code></td>
+<td>sessionId → running claude PID</td>
+</tr>
+<tr>
+<td><code>proxy</code></td>
+<td><code>ProxyState</code></td>
+<td>thinking-proxy launcher (lazy, cached)</td>
+</tr>
+<tr>
+<td><code>db</code></td>
+<td><code>Db</code></td>
+<td>database handle</td>
+</tr>
+<tr>
+<td><code>agents</code></td>
+<td><code>AgentRegistry</code> (<code>#[cfg(not(test))]</code>)</td>
+<td>background-agent registry</td>
+</tr>
+</tbody>
+</table>
+<p><code>AppState::new(db)</code> constructs the registry/proxy/agents fresh.</p>
+<h3 id="crash_recoveryrs"><code>crash_recovery.rs</code><a class="headerlink" href="#crash_recoveryrs" title="Permanent link">&para;</a></h3>
+<p>Minimal, best-effort startup cleanup. Scans the temp dir for files named
+<code>yumi-bash-*.log</code> and deletes any older than <code>86_400</code> seconds (1 day). All errors
+are silently ignored — it must never block startup.</p>
+<hr />
+<h2 id="the-claude-pipeline-claude">The Claude pipeline (<code>claude/</code>)<a class="headerlink" href="#the-claude-pipeline-claude" title="Permanent link">&para;</a></h2>
+<h3 id="binaryrs-locating-the-cli"><code>binary.rs</code> — locating the CLI<a class="headerlink" href="#binaryrs-locating-the-cli" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>locate_claude() -&gt; Option&lt;PathBuf&gt;</code> resolves the <code>claude</code> binary.</li>
+<li><code>locate_on_path_or_local(names)</code> probes each candidate <strong>on <code>PATH</code> first</strong>, then in <code>~/.local/bin</code>.</li>
+<li>Windows candidate names: <code>claude.exe</code>, <code>claude.cmd</code>, <code>claude.bat</code>, <code>claude</code>; Unix: <code>claude</code>.</li>
+<li><code>get_claude_version() -&gt; Result&lt;String,String&gt;</code> runs <code>claude --version</code> (through <code>cmd /C</code> for <code>.cmd</code>/<code>.bat</code> shims) and trims the output, falling back to stderr for shims that print there.</li>
+</ul>
+<h3 id="providerrs-multi-provider-abstraction"><code>provider.rs</code> — multi-provider abstraction<a class="headerlink" href="#providerrs-multi-provider-abstraction" title="Permanent link">&para;</a></h3>
+<p><code>enum Provider { Claude, Gemini, Codex, Kiro }</code>.</p>
+<ul>
+<li><code>from_id(Option&lt;&amp;str&gt;)</code> maps <code>"claude"</code>→Claude, <code>"gemini"</code>→Gemini, <code>"codex"|"gpt"</code>→Codex, <code>"kiro"</code>→Kiro; anything else defaults to <strong>Claude</strong>.</li>
+<li><code>locate()</code> finds the provider's binary via the same PATH/<code>~/.local/bin</code> search.</li>
+<li><code>build_args(prompt, model, resume)</code> builds the CLI arguments:</li>
+<li><strong>Claude (verified):</strong> <code>--output-format stream-json --verbose --include-partial-messages --dangerously-skip-permissions [--resume &lt;uuid&gt;] -p &lt;prompt&gt; --model &lt;model&gt;</code>.</li>
+<li><strong>Gemini / Codex / Kiro (best-effort, unverified):</strong> a minimal <code>-m &lt;model&gt; -p/&lt;prompt&gt;</code> shape mirroring Yume's shim. Only Claude is wired and tested.</li>
+</ul>
+<h3 id="spawnerrs-spawn_claudeapp-opts-resultstringstring"><code>spawner.rs</code> — <code>spawn_claude(app, opts) -&gt; Result&lt;String,String&gt;</code><a class="headerlink" href="#spawnerrs-spawn_claudeapp-opts-resultstringstring" title="Permanent link">&para;</a></h3>
+<p>The heart of the backend. <code>SpawnOpts</code> carries <code>session_id, cwd, prompt, model,
+provider?, resume_id?, thinking?, bash_monitor?</code>.</p>
+<p>Flow:
+1. <strong>Resolve provider</strong> (<code>Provider::from_id</code>). <code>--resume &lt;uuid&gt;</code> added when <code>resume_id</code> is present (Claude only).
+2. <strong>Bash monitor (opt-in, Claude only).</strong> Writes a temp MCP config at
+   <code>%TEMP%\yumi-mcp-&lt;session_id&gt;.json</code> registering <code>resources/yumi-mcp-bash.cjs</code>
+   (with <code>--session-id=</code> and <code>--stream-file=</code>), and passes <code>--mcp-config &lt;path&gt;
+   --disallowedTools Bash</code> so the model routes shell through
+   <code>mcp__yumi-bash__RunBash</code>.
+3. <strong>Thinking proxy (opt-in, Claude only).</strong> <code>state.proxy.ensure_running()</code> returns
+   an <code>ANTHROPIC_BASE_URL</code> only if the proxy is confirmed listening.
+4. <strong>Env sanitization.</strong> Strips <code>CLAUDE_CODE_*</code>, <code>CLAUDECODE</code>, <code>ANTHROPIC_BASE_URL</code>,
+   <code>CLAUDE_STREAM*</code> from the child so a parent Claude Code session can't leak in.
+5. <strong>Spawn</strong> with <code>stdin: null</code>, <code>stdout/stderr: piped</code>, sets
+   <code>CLAUDE_CODE_ENTRYPOINT=yumi</code>, <code>YUMI_STREAM_FILE=%TEMP%\yumi-bash-&lt;sid&gt;.log</code>,
+   <code>YUMI_SESSION_ID=&lt;sid&gt;</code>. Registers the child PID in the registry.
+6. <strong>Stream loop.</strong> Reads stdout line by line → <code>parse_line</code> → emits events.
+   Finalizes on <code>turn_done</code>/<code>result</code>; afterwards keeps draining stdout silently
+   (no more emits) so the lingering process's pipe never blocks.
+7. <strong>Analytics + late cost.</strong> When the <code>result</code> line is drained, records an
+   analytics row (<code>db.record_analytics</code>) and — if the turn was already finalized —
+   emits a <code>claude-cost</code> event, <strong>pid-gated</strong> by <code>registry.is_current</code> so it can't
+   attach to a newer turn.
+8. <strong>Exit.</strong> <code>child.wait()</code>, abort the monitor task, delete the temp MCP config,
+   <code>registry.unregister_if(sid, pid)</code> (reuse-safe).</p>
+<p>Events emitted (payloads use camelCase):</p>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Payload</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>claude-session-id</code></td>
+<td><code>{sessionId, claudeSessionId}</code></td>
+<td>on <code>system/init</code> (real uuid learned)</td>
+</tr>
+<tr>
+<td><code>claude-event</code></td>
+<td><code>{sessionId, event}</code></td>
+<td>every parsed <code>ClaudeEvent</code></td>
+</tr>
+<tr>
+<td><code>claude-complete</code></td>
+<td><code>{sessionId, code}</code></td>
+<td>turn finalized / process exit</td>
+</tr>
+<tr>
+<td><code>claude-cost</code></td>
+<td><code>{sessionId, cost, durationMs}</code></td>
+<td>late <code>result</code> after finalize</td>
+</tr>
+<tr>
+<td><code>claude-error</code></td>
+<td><code>{sessionId, message}</code></td>
+<td>spawn/stream failure (pre-finalize)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sessionrs-session-id-helpers"><code>session.rs</code> — session-id helpers<a class="headerlink" href="#sessionrs-session-id-helpers" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>resume_arg(Option&lt;&amp;str&gt;)</code> trims and drops empty resume ids.</li>
+<li><code>is_valid_session_id(&amp;str)</code> enforces <code>[A-Za-z0-9_-]{1,128}</code> — important because the session id becomes part of the bash stream-file name.</li>
+</ul>
+<h3 id="stream_parserrs-parse_lineline-vecclaudeevent"><code>stream_parser.rs</code> — <code>parse_line(line) -&gt; Vec&lt;ClaudeEvent&gt;</code><a class="headerlink" href="#stream_parserrs-parse_lineline-vecclaudeevent" title="Permanent link">&para;</a></h3>
+<p>The pure, non-lossy mapping from one stdout JSON line to typed events. It is the
+single most important file for understanding the data model; the full mapping has
+its own page: <strong><a href="../stream-pipeline/">Stream Pipeline</a></strong>. The <code>ClaudeEvent</code> enum
+serializes with <code>#[serde(tag = "kind", rename_all = "snake_case")]</code>, so e.g.
+<code>TurnDone</code> → <code>{"kind":"turn_done", ...}</code> with camelCase fields. Covered by the
+parser unit tests in <code>cargo test</code>.</p>
+<h3 id="proxyrs-proxystate"><code>proxy.rs</code> — <code>ProxyState</code><a class="headerlink" href="#proxyrs-proxystate" title="Permanent link">&para;</a></h3>
+<p>Lazily launches <code>resources/thinking-proxy.cjs</code> via <code>node</code> on a free port in
+<strong>18800–18899</strong>, then <strong>TCP-probes that it is actually listening</strong> (up to 3 s)
+before returning <code>http://127.0.0.1:&lt;port&gt;</code>. If node is missing or the probe times
+out it returns <code>None</code> (→ claude talks to the real API directly) and never retries
+that app session. The script is located by walking up from the executable looking
+for <code>resources/thinking-proxy.cjs</code>. See <a href="../thinking-proxy/">Thinking Proxy</a>.</p>
+<hr />
+<h2 id="process-control-processregistryrs">Process control (<code>process/registry.rs</code>)<a class="headerlink" href="#process-control-processregistryrs" title="Permanent link">&para;</a></h2>
+<p><code>ProcessRegistry</code> is a <code>Mutex&lt;HashMap&lt;String, u32&gt;&gt;</code> mapping sessionId → PID.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>register(sid, pid)</code></td>
+<td>record the running PID</td>
+</tr>
+<tr>
+<td><code>unregister(sid)</code></td>
+<td>remove and return the PID</td>
+</tr>
+<tr>
+<td><code>unregister_if(sid, pid)</code></td>
+<td>remove <strong>only if</strong> the stored PID matches — prevents a lingering turn from unregistering a newer turn that reused the sessionId</td>
+</tr>
+<tr>
+<td><code>pid_for(sid)</code></td>
+<td>look up the PID</td>
+</tr>
+<tr>
+<td><code>is_current(sid, pid)</code></td>
+<td>is this PID still the registered one? (gates late events)</td>
+</tr>
+<tr>
+<td><code>interrupt(sid)</code></td>
+<td>tree-kill the process and unregister</td>
+</tr>
+<tr>
+<td><code>kill_process_tree(pid)</code></td>
+<td>platform tree-kill</td>
+</tr>
+</tbody>
+</table>
+<p>On <strong>Windows</strong>, <code>kill_process_tree</code> enumerates children via <code>wmic process where
+(ParentProcessId=&lt;pid&gt;) get ProcessId /format:list</code>, runs <code>taskkill /PID &lt;pid&gt; /T
+/F</code>, and also explicitly kills enumerated children as a belt-and-suspenders for
+grandchildren. On other platforms it falls back to <code>kill -TERM</code>. The reuse-safe
+<code>unregister_if</code>/<code>is_current</code> pair is what lets a late, hook-delayed <code>result</code> be
+processed without corrupting a newer turn.</p>
+<hr />
+<h2 id="background-agents-agentsrs">Background agents (<code>agents.rs</code>)<a class="headerlink" href="#background-agents-agentsrs" title="Permanent link">&para;</a></h2>
+<p>Runs a headless <code>claude -p</code> turn in an <strong>isolated git worktree</strong> so it can't
+disturb the working tree, then commits the result for review/merge.</p>
+<p><code>AgentInfo</code> fields: <code>id, title, prompt, cwd, branch, worktree, model, status,
+detail?, created_at</code>. <code>status</code> ∈ <code>running | done | failed | merged | cancelled</code>.</p>
+<p>Commands (all <code>#[tauri::command]</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>list_agents()</code></td>
+<td>sorted snapshot of all agents</td>
+</tr>
+<tr>
+<td><code>start_agent(cwd, prompt, model)</code></td>
+<td>create worktree <code>%TEMP%\yumi-agents\&lt;id&gt;</code> on branch <code>yumi/agent-&lt;id&gt;</code>, spawn a headless <code>claude -p</code> (env-sanitized like the spawner), drain its stdout, then <code>git add -A</code> and commit <code>yumi agent: &lt;prompt&gt;</code> if dirty</td>
+</tr>
+<tr>
+<td><code>merge_agent_branch(id)</code></td>
+<td>merge the agent branch back into the working tree and retire the worktree</td>
+</tr>
+<tr>
+<td><code>cancel_agent(id)</code></td>
+<td>tree-kill the running claude (<code>kill_process_tree</code>) and mark cancelled</td>
+</tr>
+<tr>
+<td><code>remove_agent(id)</code></td>
+<td>remove the worktree, delete the branch, unregister</td>
+</tr>
+<tr>
+<td><code>agent_diff(id)</code></td>
+<td>diff between the agent branch and its base commit</td>
+</tr>
+</tbody>
+</table>
+<p>State changes are pushed to the UI via the <code>agent-event</code> Tauri event
+(<code>{agent: AgentInfo}</code>). Agents require a <strong>git repo</strong> as the cwd and degrade with a
+clear status otherwise.</p>
+<hr />
+<h2 id="bash-monitor-mcpmonitorrs">BASH-MONITOR (<code>mcp/monitor.rs</code>)<a class="headerlink" href="#bash-monitor-mcpmonitorrs" title="Permanent link">&para;</a></h2>
+<p>When the bash monitor is enabled, <code>spawn_monitor(app, session_id)</code> starts a tokio
+task that <strong>tails</strong> <code>%TEMP%\yumi-bash-&lt;session_id&gt;.log</code> (written by the MCP server),
+polling every ~150 ms with an offset cursor, and emits each new chunk as a
+<code>bash-output</code> event <code>{sessionId, chunk}</code>. The store appends the chunk to the last
+running tool card's <code>live</code> field. See <a href="../mcp-bash-server/">MCP Bash Server</a>.</p>
+<hr />
+<h2 id="command-surface">Command surface<a class="headerlink" href="#command-surface" title="Permanent link">&para;</a></h2>
+<p><code>lib.rs</code> registers these <code>#[tauri::command]</code>s (the exhaustive list — full
+signatures and the matching <code>ipc.ts</code> wrappers are on the <a href="../ipc-contract/">IPC Contract</a> page):</p>
+<ul>
+<li><strong>Claude:</strong> <code>get_claude_version</code>, <code>spawn_claude</code>, <code>interrupt_claude</code>, <code>get_usage_limits</code></li>
+<li><strong>Settings:</strong> <code>get_settings</code>, <code>save_settings</code>, <code>set_theme</code></li>
+<li><strong>DB/sessions:</strong> <code>db_list_sessions</code>, <code>db_get_session</code>, <code>db_save_session</code>, <code>db_delete_session</code>, <code>db_get_analytics</code></li>
+<li><strong>Projects/FS:</strong> <code>list_projects</code>, <code>add_recent_project</code>, <code>pick_directory</code>, <code>list_directory</code>, <code>read_text_file</code></li>
+<li><strong>Git:</strong> <code>git_status</code>, <code>git_diff</code></li>
+<li><strong>Agents:</strong> <code>list_agents</code>, <code>start_agent</code>, <code>merge_agent_branch</code>, <code>cancel_agent</code>, <code>remove_agent</code>, <code>agent_diff</code></li>
+</ul>
+<blockquote>
+<p>Note: <code>get_usage_limits</code> currently returns a <strong>stub</strong> (<code>UsageLimits</code> with all
+fields empty) — the rate-limit pills render from it but show no live percentages
+until it is wired to a real source. This is the honest status; see <code>PARITY.md</code>.</p>
+</blockquote>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../ipc-contract/">IPC Contract</a> — exact command signatures, events, and types.</li>
+<li><a href="../stream-pipeline/">Stream Pipeline</a> — the <code>stream_parser</code> mapping in detail.</li>
+<li><a href="../data-and-persistence/">Data &amp; Persistence</a> — the <code>db.rs</code> schema and queries.</li>
+<li><a href="../reliability-and-design/">Reliability &amp; Design</a> — env sanitization, proxy probing, finalize-on-<code>end_turn</code>.</li>
+</ul>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../architecture/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Architecture">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Architecture
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../frontend-react/" class="md-footer__link md-footer__link--next" aria-label="Next: Frontend (React)">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Frontend (React)
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      © 2026 Arne Van Den Abbeele
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.footer", "search.highlight", "search.suggest", "content.code.copy", "content.tooltips", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
