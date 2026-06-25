@@ -1,0 +1,84 @@
+site_name: Yumi Wiki
+site_url: https://arnevda-ap.github.io/yumi-wiki/
+site_description: >-
+  Yumi — a personal, open desktop GUI for the Claude Code CLI (Tauri 2 + React 19).
+  Architecture, internals, IPC contract, and reference.
+site_author: Arne Van Den Abbeele
+copyright: "© 2026 Arne Van Den Abbeele"
+docs_dir: docs
+
+repo_url: https://github.com/ArneVDA-AP/yumi-wiki
+repo_name: ArneVDA-AP/yumi-wiki
+
+theme:
+  name: material
+  palette:
+    - scheme: slate
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - content.tooltips
+    - toc.follow
+
+plugins:
+  - search
+  - tags
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
+  - tables
+  - footnotes
+  - def_list
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Overview: overview.md
+  - Architecture: architecture.md
+  - Reference:
+    - Backend (Rust): backend-rust.md
+    - Frontend (React): frontend-react.md
+    - IPC Contract: ipc-contract.md
+    - Stream Pipeline: stream-pipeline.md
+    - Data & Persistence: data-and-persistence.md
+  - Subsystems:
+    - MCP Bash Server: mcp-bash-server.md
+    - Thinking Proxy: thinking-proxy.md
+    - Yumi Plugin: yumi-plugin.md
+  - Guide:
+    - Features & Shortcuts: features-and-shortcuts.md
+    - Build, Run & Test: build-run-test.md
+    - Reliability & Design: reliability-and-design.md
+    - Troubleshooting: troubleshooting.md
+  - Glossary: glossary.md
+  - Tags: tags.md
