@@ -1197,6 +1197,11 @@ localhost HTTP proxy via <code>ANTHROPIC_BASE_URL</code>. The proxy forwards eve
 the real Anthropic API but <strong>injects the thinking configuration</strong> into the request
 body first. It is enabled by the <code>thinking</code> setting (default <strong>on</strong>) and is
 Claude-only.</p>
+<figure>
+  <img alt="A Yumi message with an italic Thinking block explaining the distributive-property approach, shown above the answer '17 x 23 = 391'." src="../assets/img/thinking-block.png" />
+<br />
+<figcaption>What the proxy produces — an interleaved <strong>thinking block</strong> streamed above the answer. Yumi renders the model's summarized reasoning as a collapsible block.</figcaption>
+</figure>
 <h2 id="launcher-claudeproxyrs">Launcher: <code>claude/proxy.rs</code><a class="headerlink" href="#launcher-claudeproxyrs" title="Permanent link">&para;</a></h2>
 <p><code>ProxyState::ensure_running(script: PathBuf)</code> is lazy and cached. The caller
 (<code>spawner.rs</code>) is responsible for locating the script via

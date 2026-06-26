@@ -1316,6 +1316,11 @@ appended. The MCP test harness asserts exactly these 5 tool names.</p>
 </ul>
 <p>This was verified end-to-end: a <code>for i in 1..6; do echo tick-$i; sleep 1</code> loop
 streamed <code>tick-1..4</code> into the tool card mid-run (<code>docs/evidence/p2-bashmon-livetail.png</code>).</p>
+<figure>
+  <img alt="A Yumi tool card for mcp__yumi-bash__RunBash mid-run, its LIVE pane streaming tick-1 through tick-4, with the command input JSON and a 'running' indicator." src="../assets/img/bash-livetail.png" />
+<br />
+<figcaption>The live tail in action — a <code>mcp__yumi-bash__RunBash</code> card mid-run, its <strong>LIVE</strong> pane streaming <code>tick-1…4</code> as the Rust monitor (<code>mcp/monitor.rs</code>) tails the temp log every ~150 ms.</figcaption>
+</figure>
 <h2 id="askuserquestion-file-ipc">AskUserQuestion file-IPC<a class="headerlink" href="#askuserquestion-file-ipc" title="Permanent link">&para;</a></h2>
 <p><code>AskUserQuestion</code> round-trips through the filesystem so the GUI can answer:</p>
 <ul>

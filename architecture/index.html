@@ -1236,6 +1236,11 @@ live in <code>%TEMP%</code>.</p>
 <p>On finalize the store calls <code>_persist(tabId)</code>, writing the conversation to the
 <code>sessions</code> + <code>messages</code> tables. The other emitted channels are <code>claude-session-id</code>
 (real uuid), <code>claude-complete</code>, <code>claude-cost</code> (late cost), and <code>claude-error</code>.</p>
+<figure>
+  <img alt="A completed Yumi turn: the prompt 'what is 19 times 3', a Thinking block, the answer '57', a 2.7s / $0.48 footer, and the context bar at 26%." src="../assets/img/streamed-turn.png" />
+<br />
+<figcaption>The output of one full turn — the spawned <code>claude</code>'s <code>stream-json</code> parsed into a thinking block, the rendered answer, and the live token bar plus the <code>⏱</code>/<code>⚡</code> cost footer.</figcaption>
+</figure>
 <h2 id="key-timing-detail-finalize-on-end_turn-not-result">Key timing detail: finalize on <code>end_turn</code>, not <code>result</code><a class="headerlink" href="#key-timing-detail-finalize-on-end_turn-not-result" title="Permanent link">&para;</a></h2>
 <div class="admonition warning">
 <p class="admonition-title">Why the turn finalizes early</p>

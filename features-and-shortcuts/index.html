@@ -1507,6 +1507,11 @@
 <h2 id="feature-catalogue">Feature catalogue<a class="headerlink" href="#feature-catalogue" title="Permanent link">&para;</a></h2>
 <p>Status legend matches <code>yumi/PARITY.md</code>: ✅ done &amp; verified · 🟢 done (lighter
 verification) · 🟡 scoped/stub · ⬜ intentionally omitted.</p>
+<figure>
+  <img alt="Yumi's command palette overlay listing New tab, Close tab, Settings, Analytics, Git panel, Files panel, Open project, Refresh usage, /clear, /compact, and theme options." src="../assets/img/command-palette.png" />
+<br />
+<figcaption>The command palette (<code>Ctrl+P</code>) — a fuzzy launcher for tabs, panels, overlays, project switching, slash-commands, and theme changes.</figcaption>
+</figure>
 <h3 id="core-chat-loop">Core chat loop ✅<a class="headerlink" href="#core-chat-loop" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Locate + spawn <code>claude</code>, stream-json parsing, <code>--resume</code>.</li>
@@ -1522,6 +1527,11 @@ DB. See <a href="../data-and-persistence/">Data &amp; Persistence</a>.</p>
 <p>Up to <strong>6</strong> panes in a CSS grid, each a full <code>ChatPane</code> (own header, messages,
 composer). F7 adds, F8 removes; click a pane to make it active. Backed by
 <code>store.splitTabs</code>.</p>
+<figure>
+  <img alt="Yumi showing three side-by-side chat panes in a grid, each with its own header, composer, and token bar." src="../assets/img/split-panes.png" />
+<br />
+<figcaption>Split-pane mode — three independent <code>ChatPane</code>s side by side, each with its own header, messages, composer, and token bar. <code>F7</code> adds a pane (up to 6), <code>F8</code> removes one.</figcaption>
+</figure>
 <h3 id="history-rollback">History rollback ✅<a class="headerlink" href="#history-rollback" title="Permanent link">&para;</a></h3>
 <p>A rewind affordance on every user message (<code>store.rollbackTo</code>) truncates the
 conversation back to that turn and reloads the prompt into the composer for
@@ -1555,6 +1565,11 @@ no router URL configured returns a <strong>clear error</strong> — never a fake
 <li><strong>Project picker + recent projects</strong>.</li>
 <li><strong>Analytics dashboard</strong> — real totals, by-model, by-date (see <a href="../data-and-persistence/">Data &amp; Persistence</a>).</li>
 </ul>
+<figure>
+  <img alt="Yumi's analytics overlay showing total cost $1.60, 26k input tokens, 232 output tokens, 3 sessions, a by-model bar, and a by-date bar chart." src="../assets/img/analytics.png" />
+<br />
+<figcaption>The analytics overlay (<code>Ctrl+Y</code>) — real totals (cost, input/output tokens, sessions) with by-model and by-date breakdowns, computed from the <code>analytics</code> table.</figcaption>
+</figure>
 <h3 id="per-message-cost-footer">Per-message cost footer 🟢<a class="headerlink" href="#per-message-cost-footer" title="Permanent link">&para;</a></h3>
 <p>Each finalized assistant message shows <code>⏱ duration</code> + <code>⚡ $cost</code>, attached via the
 late <code>claude-cost</code> side channel. Shown live; <strong>not</strong> persisted to the DB (the
