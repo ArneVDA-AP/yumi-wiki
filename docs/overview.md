@@ -10,6 +10,11 @@ tags: [yumi, overview]
 
 ---
 
+<figure markdown="span">
+  ![Yumi at startup: the OLED shell with the sessions sidebar, an empty chat tab, top-bar controls and rate-limit pills, and the message composer.](assets/img/boot.png)
+  <figcaption>Yumi at rest — the OLED shell: a sessions sidebar grouped by project, the chat tab bar, greyed rate-limit pills (5h / 7d), the live token/context bar, and the composer.</figcaption>
+</figure>
+
 ## What Yumi is
 
 **Yumi** is a native desktop GUI for the **Claude Code CLI**. Instead of talking to

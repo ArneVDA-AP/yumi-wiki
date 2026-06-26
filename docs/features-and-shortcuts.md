@@ -43,6 +43,11 @@ The same list is shown in the Settings overlay (the `SHORTCUT_HINTS` reference).
 Status legend matches `yumi/PARITY.md`: ✅ done & verified · 🟢 done (lighter
 verification) · 🟡 scoped/stub · ⬜ intentionally omitted.
 
+<figure markdown="span">
+  ![Yumi's command palette overlay listing New tab, Close tab, Settings, Analytics, Git panel, Files panel, Open project, Refresh usage, /clear, /compact, and theme options.](assets/img/command-palette.png)
+  <figcaption>The command palette (<code>Ctrl+P</code>) — a fuzzy launcher for tabs, panels, overlays, project switching, slash-commands, and theme changes.</figcaption>
+</figure>
+
 ### Core chat loop ✅
 - Locate + spawn `claude`, stream-json parsing, `--resume`.
 - Render user/assistant text, **thinking blocks**, collapsible **tool cards** (input + result), markdown + syntax highlighting.
@@ -58,6 +63,11 @@ DB. See [Data & Persistence](data-and-persistence.md).
 Up to **6** panes in a CSS grid, each a full `ChatPane` (own header, messages,
 composer). F7 adds, F8 removes; click a pane to make it active. Backed by
 `store.splitTabs`.
+
+<figure markdown="span">
+  ![Yumi showing three side-by-side chat panes in a grid, each with its own header, composer, and token bar.](assets/img/split-panes.png)
+  <figcaption>Split-pane mode — three independent <code>ChatPane</code>s side by side, each with its own header, messages, composer, and token bar. <code>F7</code> adds a pane (up to 6), <code>F8</code> removes one.</figcaption>
+</figure>
 
 ### History rollback ✅
 A rewind affordance on every user message (`store.rollbackTo`) truncates the
@@ -95,6 +105,11 @@ no router URL configured returns a **clear error** — never a fake success.
 - **Token/context bar** — fills live from the `message_start` usage snapshot (not only end-of-turn); sums `input + cacheRead + cacheCreation + output` tokens; window size is dynamic per model via `contextWindowFor()` in `src/lib/models.ts` (200K for Claude, ~1M for Gemini, etc.).
 - **Project picker + recent projects**.
 - **Analytics dashboard** — real totals, by-model, by-date (see [Data & Persistence](data-and-persistence.md)).
+
+<figure markdown="span">
+  ![Yumi's analytics overlay showing total cost $1.60, 26k input tokens, 232 output tokens, 3 sessions, a by-model bar, and a by-date bar chart.](assets/img/analytics.png)
+  <figcaption>The analytics overlay (<code>Ctrl+Y</code>) — real totals (cost, input/output tokens, sessions) with by-model and by-date breakdowns, computed from the <code>analytics</code> table.</figcaption>
+</figure>
 
 ### Per-message cost footer 🟢
 Each finalized assistant message shows `⏱ duration` + `⚡ $cost`, attached via the

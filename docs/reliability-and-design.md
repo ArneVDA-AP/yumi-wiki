@@ -90,6 +90,11 @@ attach to a newer turn that reused the session id. Net: the dashboard and the co
 footer are populated accurately, and the chat stays as responsive as before. (Cost
 is shown live but not persisted — the `messages` schema has no cost column.)
 
+<figure markdown="span">
+  ![A finalized Yumi turn: the prompt 'reply with just: pong', the answer 'pong', a 3.5s / $0.12 cost footer, and the composer showing the Send arrow rather than the mid-run Stop button.](assets/img/finalized-turn.png)
+  <figcaption>Fixes 3 and 4, made visible — the turn has finalized, so the composer shows the <strong>Send</strong> arrow again (mid-run it is a red <strong>Stop</strong> square) with input re-enabled ~10 s after the answer, while the late <code>claude-cost</code> side channel attaches the <strong>⏱ 3.5s · ⚡ $0.12</strong> footer.</figcaption>
+</figure>
+
 ## 5. Orphaned children on host panic → `process::guard`
 
 **Symptom.** A Rust panic in the host process left spawned `claude` children

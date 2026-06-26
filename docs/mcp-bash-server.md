@@ -72,6 +72,11 @@ This is the distinctive mechanism that makes shell output appear **live** in the
 This was verified end-to-end: a `for i in 1..6; do echo tick-$i; sleep 1` loop
 streamed `tick-1..4` into the tool card mid-run (`docs/evidence/p2-bashmon-livetail.png`).
 
+<figure markdown="span">
+  ![A Yumi tool card for mcp__yumi-bash__RunBash mid-run, its LIVE pane streaming tick-1 through tick-4, with the command input JSON and a 'running' indicator.](assets/img/bash-livetail.png)
+  <figcaption>The live tail in action — a <code>mcp__yumi-bash__RunBash</code> card mid-run, its <strong>LIVE</strong> pane streaming <code>tick-1…4</code> as the Rust monitor (<code>mcp/monitor.rs</code>) tails the temp log every ~150 ms.</figcaption>
+</figure>
+
 ## AskUserQuestion file-IPC
 
 `AskUserQuestion` round-trips through the filesystem so the GUI can answer:

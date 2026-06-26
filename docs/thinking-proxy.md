@@ -19,6 +19,11 @@ the real Anthropic API but **injects the thinking configuration** into the reque
 body first. It is enabled by the `thinking` setting (default **on**) and is
 Claude-only.
 
+<figure markdown="span">
+  ![A Yumi message with an italic Thinking block explaining the distributive-property approach, shown above the answer '17 x 23 = 391'.](assets/img/thinking-block.png)
+  <figcaption>What the proxy produces — an interleaved <strong>thinking block</strong> streamed above the answer. Yumi renders the model's summarized reasoning as a collapsible block.</figcaption>
+</figure>
+
 ## Launcher: `claude/proxy.rs`
 
 `ProxyState::ensure_running(script: PathBuf)` is lazy and cached. The caller

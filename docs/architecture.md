@@ -89,6 +89,11 @@ On finalize the store calls `_persist(tabId)`, writing the conversation to the
 `sessions` + `messages` tables. The other emitted channels are `claude-session-id`
 (real uuid), `claude-complete`, `claude-cost` (late cost), and `claude-error`.
 
+<figure markdown="span">
+  ![A completed Yumi turn: the prompt 'what is 19 times 3', a Thinking block, the answer '57', a 2.7s / $0.48 footer, and the context bar at 26%.](assets/img/streamed-turn.png)
+  <figcaption>The output of one full turn — the spawned <code>claude</code>'s <code>stream-json</code> parsed into a thinking block, the rendered answer, and the live token bar plus the <code>⏱</code>/<code>⚡</code> cost footer.</figcaption>
+</figure>
+
 ## Key timing detail: finalize on `end_turn`, not `result`
 
 !!! warning "Why the turn finalizes early"
