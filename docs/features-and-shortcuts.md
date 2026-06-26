@@ -79,17 +79,20 @@ has no speech backend.
 With the setting on, shell runs through the [MCP bash server](mcp-bash-server.md)
 and streams **live** into the tool card's LIVE pane.
 
-### Multi-provider 🟡
-A provider abstraction (`provider.rs`) can target Gemini / GPT (Codex) / Kiro by
-locating their CLI and shaping args per provider. **Only Claude is verified**; the
-others are best-effort, unverified shims.
+### Multi-provider 🟢
+Every provider drives the **same** `claude` binary and stream-json parser. A
+non-Claude provider (Gemini / GPT / Kiro) is realized by pointing that process
+at a translating router (`ANTHROPIC_BASE_URL = settings.routerBaseUrl`) such as
+claude-code-router, LiteLLM, or OpenRouter. Selecting a non-Claude provider with
+no router URL configured returns a **clear error** — never a fake success.
+`provider.rs` exposes `build_spawn_plan(provider, prompt, model, resume, router_base_url) → SpawnPlan`; the args are identical for every provider, only the base URL differs. Claude is the fully-verified path; the routing mechanism itself is verified (unit-tested in `provider::tests`).
 
 ### P1 surfaces 🟢
-- **Rate-limit pills** (5h / 7d) — the in-stream `rate_limit_event` is parsed; the `get_usage_limits` command is currently a stub, so live percentages aren't populated yet.
+- **Rate-limit pills** (5h / 7d) — honest + live. `get_usage_limits` returns an honestly-inert state (`live:false`, no fake %) until a real `rate_limit_event` arrives in-stream; the pills then light up with live status, window type, and reset time via `store._onEvent → parseRateLimit`. Until then they render greyed `—` with an "unavailable" tooltip. See [Reliability & Design](reliability-and-design.md).
 - **Git panel** — status + working/staged diff.
 - **Files panel + `@`-mentions** — folder navigation and file insertion.
 - **Command palette** — fuzzy slash-command launcher.
-- **Token/context bar** — usage % from `message_delta`.
+- **Token/context bar** — fills live from the `message_start` usage snapshot (not only end-of-turn); sums `input + cacheRead + cacheCreation + output` tokens; window size is dynamic per model via `contextWindowFor()` in `src/lib/models.ts` (200K for Claude, ~1M for Gemini, etc.).
 - **Project picker + recent projects**.
 - **Analytics dashboard** — real totals, by-model, by-date (see [Data & Persistence](data-and-persistence.md)).
 
@@ -97,6 +100,23 @@ others are best-effort, unverified shims.
 Each finalized assistant message shows `⏱ duration` + `⚡ $cost`, attached via the
 late `claude-cost` side channel. Shown live; **not** persisted to the DB (the
 message schema has no cost column), so it does not survive a reload-from-history.
+
+### Process guard (`process::guard`) ✅
+A process-wide child-PID set (`src-tauri/src/process/guard.rs`) ensures spawned
+`claude` children AND the thinking-proxy node process die with the host. Every
+child PID is tracked via `guard::track(pid)` at spawn time. A `std::panic` hook
+installed at startup calls `guard::kill_all()` before unwinding; the Tauri
+`RunEvent::Exit` handler does the same on normal teardown. This covers the
+failure mode where a host panic would otherwise orphan background processes.
+See [Reliability & Design](reliability-and-design.md).
+
+### Sidecar bundling (`bundle.resources` + `resolve_resource`) ✅
+The `.cjs` sidecars (`yumi-mcp-bash.cjs`, `thinking-proxy.cjs`) and the
+`yumi-plugin/` tree are declared as Tauri `resources` in `tauri.conf.json`.
+At runtime `claude::resources::resolve_resource` tries `app.path().resource_dir()`
+first (works in both the `--no-bundle` dev build and a production installer),
+then falls back to the dev-layout ancestor-walk. This means the app will find
+its sidecars in a production bundle, not only during development.
 
 ### Intentionally omitted ⬜
 Licensing / payments / paywall, auto-update, and the VSCode companion extension.

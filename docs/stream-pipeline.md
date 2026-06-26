@@ -56,12 +56,16 @@ captured bytes.
   - `text_delta` → `text_delta { text: delta.text }` (live typing).
   - `thinking_delta` → `thinking_delta { text: delta.thinking }`.
   - other → `raw`.
-- other inner types (`message_start`, `content_block_start/stop`, `message_stop`, …) → `raw` (safely ignorable by the UI).
+- **`message_start`** → read `event.message.usage`; emit `ClaudeEvent::Usage` with the turn's initial token snapshot (`inputTokens`, `outputTokens`, `cacheRead`, `cacheCreation`). This is what makes the token bar fill live at the start of a turn — cache tokens dominate on resumed sessions. If `usage` is absent → `raw`.
+- other inner types (`content_block_start/stop`, `message_stop`, …) → `raw` (safely ignorable by the UI).
 
 ### Non-lossy details
 - An `assistant` line with no recognisable content blocks still yields a single `raw` event.
-- `tool_result` content is flattened: a string is used as-is; an array of `{type:"text", text}` blocks is concatenated; anything else is stringified.
-- Unknown thinking shapes fall back from `delta.thinking` to `delta.text`.
+- `tool_result` content is polymorphic and always flattened to a string: a plain string is used as-is; an array of `{type:"text", text}` blocks is concatenated; an object is unwrapped by probing `content`, `output`, then `text` keys (each of which may itself be a string or nested array — the extraction recurses). This covers every known tool shape without leaving a raw JSON blob in the result card.
+- Thinking text is read tolerantly: a **complete** `assistant` `thinking` block reads `thinking`, falling back to `text`; the streaming `thinking_delta` reads `delta.thinking` only (empty string if absent).
+
+### Subagent isolation
+Lines emitted by an in-stream subagent (the Task tool's child) carry a non-null top-level `parent_tool_use_id`. The parser routes the entire line to `raw` before any further dispatch — a subagent's `end_turn` must never finalize the main turn, and its text/tool output must never pollute the main message. The main turn (where `parent_tool_use_id` is absent or `null`) still renders the Task `tool_use` card and its `tool_result` normally.
 
 ### Why `turn_done` exists
 `turn_done` is emitted from the terminal `message_delta` — which arrives **as soon
@@ -86,7 +90,7 @@ usage?, rateLimit?, error? }`.
 | `assistant_thinking` | commit a complete thinking block |
 | `tool_use` | push a new tool-card block, `running: true` |
 | `tool_result` | find the tool card by `toolUseId`, attach `content`, set `running: false` |
-| `usage` | surface `{inputTokens, outputTokens, cacheRead, cacheCreation}` (drives the token bar) |
+| `usage` | surface `{inputTokens, outputTokens, cacheRead, cacheCreation}` (drives the token bar live mid-stream — emitted from `message_start` at turn start, before any deltas arrive) |
 | `rate_limit` | surface the raw payload |
 | `turn_done` | **finalize**: `streaming: false`, close any still-running tool cards, mark `finalized` |
 | `result` | **finalize** with `cost` + `durationMs`; if nothing streamed, synthesize the message from `resultText` |

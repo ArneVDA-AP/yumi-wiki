@@ -20,6 +20,11 @@ config (`%TEMP%\yumi-mcp-<sid>.json`) that registers this script and passes
 through `mcp__yumi-bash__RunBash` instead of the built-in `Bash` tool. That
 redirection is what lets the Rust BASH-MONITOR tail and stream the output live.
 
+The script path is resolved by `claude::resources::resolve_resource`, which tries
+`app.path().resource_dir()/resources/yumi-mcp-bash.cjs` first (installed and
+`target/debug/resources` layouts) and falls back to walking up from the executable
+— so it works in a bundled install and in the `--no-bundle` dev build.
+
 - **Protocol version:** `2024-11-05`.
 - **Server info:** `{ name: "yumi", version: "1.0.0" }`.
 - Session id comes from the `--session-id=` arg or `YUMI_SESSION_ID` env, validated against `^[A-Za-z0-9_-]{1,128}$`.
@@ -74,6 +79,14 @@ streamed `tick-1..4` into the tool card mid-run (`docs/evidence/p2-bashmon-livet
 - The server writes the pending question to `~/.yumi/askuser/<sid>.json` (mode `0o600` on POSIX) and **polls** for the answer at `~/.yumi/askuser/<sid>.answer.json`.
 - Poll interval **250 ms**, timeout **5 minutes**.
 - The UI watches for the pending file, renders the choice popover, and writes the answer file.
+
+## Process lifetime
+
+The MCP bash server is a child of the `claude` process (passed via `--mcp-config`),
+not a separate long-lived sidecar. The spawned `claude` PID is registered with
+`process::guard::track` in `spawner.rs`, so both `claude` and any processes it owns
+are tree-killed if the host panics or exits — the server never leaks an idle node
+process.
 
 ## Tests
 

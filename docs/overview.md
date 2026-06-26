@@ -86,7 +86,7 @@ A high-level catalogue (full details and status in
 - **Thinking proxy** for interleaved thinking on adaptive models.
 - **Yumi plugin** (4 agents, 8 commands, 1 guard hook).
 
-**Multi-provider** (experimental) — a provider abstraction can target Gemini / GPT (Codex) / Kiro; only the **Claude** path is verified.
+**Multi-provider** (experimental) — every provider drives the same `claude` binary; a non-Claude provider sets `ANTHROPIC_BASE_URL` to a user-configured router URL (claude-code-router / LiteLLM / OpenRouter). No router configured → a clear error, never a fake. The Claude path is fully verified; the routing mechanism is verified.
 
 ## Parity tiers
 
@@ -96,7 +96,7 @@ The build was organised into three tiers (from `PLAN.md`):
 - **P1 — important:** implemented with lighter verification (git/files panels, command palette, analytics, rate limits, `@`-mentions, plugin). (All 🟢.)
 - **P2 — parity-noted:** scoped, stubbed, or honestly labelled. Most P2 items
   ended up fully built and verified (split panes, history rollback, background
-  agents, bash monitor); multi-provider is partly stubbed; licensing/payments and
+  agents, bash monitor, multi-provider router); licensing/payments and
   auto-update/VSCode companion are **intentionally omitted**.
 
 ## See also

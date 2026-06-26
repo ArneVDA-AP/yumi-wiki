@@ -24,6 +24,7 @@ src/
     streamParse.ts     ClaudeEvent → ChatMessage reducer
     themes.ts          6 themes + applyTheme
     shortcuts.ts       global keyboard map
+    models.ts          contextWindowFor() — per-model context-window lookup
   components/
     chat/    MessageList, MessageItem, ChatPane, ToolCard, ThinkingBlock, RateLimitPills
     input/   PromptInput, TokenBar, MentionPopup, useDictation
@@ -45,7 +46,7 @@ A single zustand store holds all UI state. Top-level fields:
 
 | Field | Type | Meaning |
 |-------|------|---------|
-| `tabs` | `Tab[]` | open chat tabs (each has its own messages, draft, streaming flag, model, cwd, `claudeSessionId`) |
+| `tabs` | `Tab[]` | open chat tabs (each has its own messages, draft, streaming flag, model, cwd, `claudeSessionId`); each tab also carries `lastUsage` (`inputTokens`, `outputTokens`, `cacheRead`, `cacheCreation`) filled live from `message_start` |
 | `activeTabId` | `string \| null` | focused tab |
 | `settings` / `settingsLoaded` | `Settings` / `bool` | persisted settings |
 | `sessions` | `SessionMeta[]` | past sessions for the sidebar |
@@ -65,7 +66,7 @@ A single zustand store holds all UI state. Top-level fields:
 - `newTab(opts?)`, `closeTab(id)`, `setActiveTab(id)`, `renameTab(id, title)`, `setDraft(id, draft)`.
 
 **Conversation**
-- `send(tabId, prompt)` — append the user message + an empty streaming assistant, then `spawnClaude(opts)`.
+- `send(tabId, prompt)` — append the user message + an empty streaming assistant, then `spawnClaude(opts)` (opts include `settings.routerBaseUrl` so the spawner can set `ANTHROPIC_BASE_URL` for routed providers).
 - `stop(tabId)` — `interruptClaude` and finalize.
 - `resumeSession(meta)` — open a past session in a new tab and load its messages from the DB.
 - `rollbackTo(tabId, messageId)` — rewind the conversation to before a user turn and reload that prompt into the draft for edit/resend, then re-persist.
@@ -151,13 +152,13 @@ owns `bootstrap()` and installs the keyboard shortcuts.
 | `ChatPane` | one pane in the split grid; renders a single tab's chat + composer; clicking it activates the tab |
 | `ToolCard` | collapsible tool call — name, pretty-printed input JSON, running spinner → ✓/✗, result body, and a **LIVE** pane for streamed bash output |
 | `ThinkingBlock` | collapsible dimmed thinking block (auto-expands while streaming, collapses after) |
-| `RateLimitPills` | 5h / 7d usage pills, colour-coded; renders nothing when usage is null |
+| `RateLimitPills` | 5h / 7d rate-limit pills; when `usage.live` is false (no real signal yet) renders greyed `—` pills with an "unavailable" tooltip — never fake numbers; when a live `rate_limit_event` arrives (`usage.live = true`), shows real status, window type, and reset time; renders nothing when `usage` is null |
 
 ### `input/`
 | Component | Renders |
 |-----------|---------|
 | `PromptInput` | the composer: token bar + auto-growing textarea + send/stop, `@`-mention file picker, voice toggle, error banner, model label |
-| `TokenBar` | thin context-usage bar (0–200k, colour-coded by the auto-compact threshold) |
+| `TokenBar` | thin context-usage bar — dynamic window via `contextWindowFor(tab.model)` (`models.ts`; 200K for Claude, 1M for Gemini, etc.); sums `inputTokens + cacheRead + cacheCreation + outputTokens`; fills live mid-stream from `message_start` usage (not only end-of-turn); colour-coded by the auto-compact threshold |
 | `MentionPopup` | floating fuzzy-filtered `@`-mention file list, keyboard navigable |
 | `useDictation` | hook wrapping the Web Speech API for F5 voice dictation; degrades gracefully when WebView2 has no speech backend |
 

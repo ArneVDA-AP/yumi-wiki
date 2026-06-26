@@ -71,19 +71,21 @@ Index: `idx_messages_session` on `messages(session_id)`.
 | `record_analytics(session_id, model, input, output, cost, created_at)` | insert one analytics row |
 | `get_analytics()` | aggregate analytics into an `Analytics` (see below) |
 | `get_setting(key)` / `set_setting(key, value)` | read/upsert a settings row |
+| `prune(max_sessions, max_analytics_age_ms, now_ms)` | cap growth: keeps only the newest `max_sessions` sessions (cascading messages), deletes analytics rows older than `max_analytics_age_ms`; called once at startup with 500 and 1 year |
 
 ### Analytics aggregation
 
 `get_analytics()` returns an `Analytics { totalCostUsd, totalInputTokens,
 totalOutputTokens, sessionsCount, byModel[], byDate[] }`:
 
-- **Totals:** `SUM(cost_usd)`, `SUM(input_tokens)`, `SUM(output_tokens)`, `COUNT(DISTINCT session_id)`.
+- **Totals:** `SUM(cost_usd)`, `SUM(input_tokens)`, `SUM(output_tokens)`. `sessionsCount` is `COUNT(*) FROM sessions` — the total number of session rows.
 - **By model:** `GROUP BY model`, ordered by `SUM(cost_usd) DESC` → `ByModel { model, cost, tokens, count }`.
 - **By date:** `GROUP BY strftime('%Y-%m-%d', created_at/1000, 'unixepoch')`, ordered `DESC` → `ByDate { date, cost, count }`.
 
-Two unit tests guard this: `record_and_aggregate_analytics` (multi-model,
-multi-day totals + ordering) and `empty_analytics_is_zeroed` (an empty DB returns
-all zeros / empty arrays).
+Three unit tests guard this: `record_and_aggregate_analytics` (multi-model,
+multi-day totals + ordering), `prune_caps_sessions_and_ages_out_analytics` (verifies
+session cap + analytics age-out), and `empty_analytics_is_zeroed` (an empty DB
+returns all zeros / empty arrays).
 
 > **How analytics get recorded:** the spawner parses the turn's drained `result`
 > line and calls `record_analytics` once per turn — even after the UI has
@@ -97,13 +99,14 @@ all zeros / empty arrays).
 Settings are persisted as a single JSON blob in the `settings` table (loaded by
 `get_settings`, written by `save_settings`). The current **theme** is also mirrored
 to a separate settings key, and `set_theme` updates both. The `Settings` struct
-uses `#[serde(rename_all = "camelCase")]`, and two fields carry serde defaults for
-forward-compatibility with older blobs: `provider` (defaults to `"claude"`) and
-`bash_monitor` (defaults to `false`).
+uses `#[serde(rename_all = "camelCase")]`, and three fields carry serde defaults for
+forward-compatibility with older blobs: `provider` (defaults to `"claude"`),
+`router_base_url` (defaults to `""`), and `bash_monitor` (defaults to `false`).
 
 | Field (TS) | Default | |
 |------------|---------|--|
 | `provider` | `"claude"` | provider id |
+| `routerBaseUrl` | `""` | `ANTHROPIC_BASE_URL` for routed non-Claude providers (LiteLLM / OpenRouter / claude-code-router); empty = none |
 | `model` | `"claude-opus-4-8"` | |
 | `theme` | `"oled"` | one of the 6 theme names |
 | `vimMode` | `false` | |
@@ -137,6 +140,12 @@ What Yumi writes, and where:
 
 `crash_recovery.rs` sweeps stale `yumi-bash-*.log` files (older than a day) at
 startup. The bundled `~/.claude` plugin is covered on [Yumi Plugin](yumi-plugin.md).
+
+Sidecar scripts (`yumi-mcp-bash.cjs`, `thinking-proxy.cjs`, `yumi-plugin/`) are
+declared as Tauri `bundle.resources` and staged to `src-tauri/target/debug/resources/`
+during a `cargo build`. `claude::resources::resolve_resource` tries
+`app.path().resource_dir()/resources/<name>` first (the installed and debug-build
+layout) and only falls back to the dev ancestor-walk if that path is absent.
 
 ## See also
 

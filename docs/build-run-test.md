@@ -40,13 +40,27 @@ Dev: `vite ^7.0.4`, `typescript ~5.8.3`, `@vitejs/plugin-react ^4.6.0`,
 `chrono 0.4` (`serde, clock`), `anyhow 1`. Build-dep: `tauri-build 2`.
 Release profile: `strip = true`, `lto = false`.
 
+Three new modules were added in the v1 polish pass: `claude/resources.rs`
+(`resolve_resource` — bundles-aware sidecar resolution), `process/guard.rs`
+(process-wide PID set; panic hook + `RunEvent::Exit` kill all spawned children),
+and `platform.rs` (`CREATE_NO_WINDOW` constant + `now_millis()`, shared across
+modules to eliminate duplication).
+
 ## App configuration (`tauri.conf.json`)
 
 - **productName** `Yumi`, **identifier** `com.yumi.app`, **version** `0.1.0`.
 - **beforeDevCommand** `npm run dev`, **devUrl** `http://localhost:1420`; **beforeBuildCommand** `npm run build`, **frontendDist** `../dist`.
 - **Window:** title `Yumi`, 1400×900 (min 900×600), `backgroundColor #000000`, decorations on, resizable.
 - **Security:** CSP is `null` (permissive — a personal app).
-- **Bundle:** target `nsis` (Windows installer); icons from `src-tauri/icons/`.
+- **Bundle:** target `nsis` (Windows installer); icons from `src-tauri/icons/`. The `bundle.resources` map declares the three sidecars so they ship inside the installer and are available to `resolve_resource` at runtime:
+  ```json
+  "resources": {
+    "../resources/yumi-mcp-bash.cjs":   "resources/yumi-mcp-bash.cjs",
+    "../resources/thinking-proxy.cjs":  "resources/thinking-proxy.cjs",
+    "../resources/yumi-plugin":         "resources/yumi-plugin"
+  }
+  ```
+  During a `--no-bundle` debug build Cargo also stages these files to `src-tauri/target/debug/resources/`, so `resource_dir()` resolves them even without an installer.
 - **Capabilities** (`capabilities/default.json`): the `main` window is granted `core:default` and `opener:default`.
 
 The Vite dev server runs on a **strict** port `1420` (HMR on `1421`),
@@ -73,7 +87,7 @@ npm run build        # tsc && vite build  → dist/
 
 ### Tests
 ```bash
-# Rust unit tests (parser + registry + analytics) — 25 tests
+# Rust unit tests (parser + provider + registry + guard + db + resources) — 38 tests
 cd src-tauri && cargo test
 
 # MCP server JSON-RPC test — 12 assertions
@@ -89,9 +103,9 @@ cd resources && node tests/mcp_server.test.mjs
 | Release bundle | NSIS installer under `src-tauri/target/release/bundle/` (when bundling) |
 | Database | `~/.yumi/yumi.db` (created at runtime) |
 
-## Verification gates (last green 2026-06-25)
+## Verification gates (last green 2026-06-26)
 
-- `cargo test` → **25/25**.
+- `cargo test` → **38/38**.
 - `node resources/tests/mcp_server.test.mjs` → **12/12**.
 - `tsc && vite build` → **0 errors**.
 - `npx tauri build --debug --no-bundle` → builds `yumi.exe`.

@@ -67,11 +67,20 @@ which *is* persisted, still reflects it.
 
 ## Rate limits
 
-**The 5h / 7d pills show nothing.**
-The `get_usage_limits` command is currently a **stub** returning empty values, so
-the pills render but have no live percentages. The in-stream `rate_limit_event` is
-parsed, but the polled limits aren't wired yet. This is the honest status in
-`PARITY.md`.
+**The 5h / 7d pills show `—` (greyed).**
+This is correct at startup and is not a bug. There is no reliable local source for
+rolling 5h/7d window percentages (`~/.claude/stats-cache.json` is historical token
+stats, not a window %). `get_usage_limits` returns an honestly-inert state
+(`{rateLimited:false, live:false, windowType:None}`), and the pills render greyed
+`—` with an "unavailable" tooltip rather than display a fake number.
+
+**The pills never light up after a real turn.**
+The in-stream `rate_limit_event` (emitted by the CLI after `end_turn`, before
+`result`) is the live signal. It is parsed by `streamParse.ts`, routed through
+`store._onEvent` → `parseRateLimit()`, and reflected in the pills. If the pills
+stay grey after a real turn, confirm the spawner build includes the post-finalize
+`rate_limit_event` forwarding path (`spawner.rs` pid-gated `RateLimit` branch). A
+greyed pill at startup that lights up after a turn is working correctly.
 
 ## Background agents
 
@@ -84,6 +93,28 @@ directory the agent degrades with a clear status. See [`agents.rs`](backend-rust
 `merge_agent_branch` retires the worktree on success and `remove_agent` cleans it
 up; if one is orphaned, remove the worktree dir under `%TEMP%\yumi-agents\` and
 delete the `yumi/agent-<id>` branch manually.
+
+## Sidecars
+
+**"sidecar not found" / MCP bash server or proxy doesn't start.**
+Sidecars (`yumi-mcp-bash.cjs`, `thinking-proxy.cjs`, `yumi-plugin/`) are located by
+`claude::resources::resolve_resource`: it checks `app.path().resource_dir()/resources/<name>`
+first (the bundled layout), then walks up from the executable for a sibling
+`resources/<name>` (the `--no-bundle` dev build). In a `--no-bundle` dev build,
+`cargo build` must have been run at least once so the `resources/` directory
+exists at `src-tauri/target/debug/resources/`. If a sidecar is still not found,
+confirm `bundle.resources` is declared in `tauri.conf.json` and run
+`npx tauri build --debug --no-bundle` to refresh the staged resources.
+
+## Orphaned processes
+
+**Spawned `claude` or proxy processes survive after Yumi closes.**
+`process::guard` tracks every spawned child PID in a process-wide set and
+tree-kills them on `RunEvent::Exit` (normal teardown) and on a `std::panic`. If
+processes survive, confirm `guard::install_panic_hook()` is called at startup
+(`lib.rs`) and that the `RunEvent::Exit` arm calls `guard::kill_all()`. On Windows,
+`kill_process_tree` uses `taskkill /T /F` — confirm the pid set is non-empty at
+shutdown (i.e. `guard::track` was called for both the `claude` child and the proxy).
 
 ## Build
 

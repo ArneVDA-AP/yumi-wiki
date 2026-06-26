@@ -58,10 +58,10 @@ AgentEvent          = { agent: AgentInfo }                        // "agent-even
 
 ### Other key types
 
-- `Settings = { provider, model, theme, vimMode, thinking, showRateLimit, bashMonitor, autoCompactThreshold }`. `DEFAULT_SETTINGS`: `provider:"claude"`, `model:"claude-opus-4-8"`, `theme:"oled"`, `vimMode:false`, `thinking:true`, `showRateLimit:true`, `bashMonitor:false`, `autoCompactThreshold:0.75`.
-- `SpawnOpts = { sessionId, cwd, prompt, model, provider?, resumeId?, thinking?, bashMonitor? }`.
+- `Settings = { provider, routerBaseUrl, model, theme, vimMode, thinking, showRateLimit, bashMonitor, autoCompactThreshold }`. `DEFAULT_SETTINGS`: `provider:"claude"`, `routerBaseUrl:""`, `model:"claude-opus-4-8"`, `theme:"oled"`, `vimMode:false`, `thinking:true`, `showRateLimit:true`, `bashMonitor:false`, `autoCompactThreshold:0.75`.
+- `SpawnOpts = { sessionId, cwd, prompt, model, provider?, routerBaseUrl?, resumeId?, thinking?, bashMonitor? }`.
 - `MessageBlock` = a `text` | `thinking` | `tool_use` block (the tool block carries `id, name, input, result?, isError?, running?, live?`). `ChatMessage = { id, role, blocks[], streaming?, cost?, durationMs? }`.
-- `SessionMeta`, `SessionDetail`, `StoredMessage`, `Analytics` (+ `ByModel`/`ByDate`), `RecentProject`, `GitStatus`, `DirEntry`, `UsageLimits`, `AgentInfo`, `ProviderInfo`/`PROVIDERS`. (Field lists in `types.ts`; storage shapes on [Data & Persistence](data-and-persistence.md).)
+- `SessionMeta`, `SessionDetail`, `StoredMessage`, `Analytics` (+ `ByModel`/`ByDate`), `RecentProject`, `GitStatus`, `DirEntry`, `UsageLimits` (`rateLimited, live?, windowType?, fiveHourPct?, sevenDayPct?, resetsAt?`), `AgentInfo`, `ProviderInfo`/`PROVIDERS`. (Field lists in `types.ts`; storage shapes on [Data & Persistence](data-and-persistence.md).)
 
 ---
 
@@ -76,7 +76,7 @@ matching `ipc.ts` wrapper. `app: AppHandle` is implicit and omitted below.
 | `get_claude_version` | — | `String` | `getClaudeVersion()` |
 | `spawn_claude` | `opts: SpawnOpts` | `String` (session id) | `spawnClaude(opts)` |
 | `interrupt_claude` | `sessionId: String` | `()` | `interruptClaude(sessionId)` |
-| `get_usage_limits` | `force: bool` | `UsageLimits` *(stub — empty)* | `getUsageLimits(force?)` |
+| `get_usage_limits` | `force: bool` | `UsageLimits` *(honestly inert: `{rateLimited:false, live:false}`)* | `getUsageLimits(force?)` |
 
 ### Settings — `commands/settings.rs`
 | Command | Args | Returns | `ipc.ts` |

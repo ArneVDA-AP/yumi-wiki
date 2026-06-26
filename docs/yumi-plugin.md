@@ -71,10 +71,6 @@ distinct from (but parallel to) the agents Yumi-the-app surfaces in its own
 tooling. The four roles (architect/explorer/implementer/guardian) match the
 operating workflow used throughout the project.
 
-> The installed plugin contains **8 commands** and **4 agents** as listed above
-> (verified from `resources/yumi-plugin/`). Some older summaries in `PARITY.md`
-> mention "5 commands" — treat the files in `resources/yumi-plugin/commands/` as
-> the source of truth.
 
 ## See also
 

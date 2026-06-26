@@ -26,8 +26,11 @@ flowchart TB
 ```
 
 1. **Tauri host (`yumi.exe`, Rust).** Owns the window, the SQLite database, the
-   process registry, and all `#[tauri::command]` handlers. Entry point is
-   `src-tauri/src/main.rs` → `lib.rs::run()`.
+   process registry, and all `#[tauri::command]` handlers. Also hosts
+   `process::guard` (a process-wide child-PID set that tree-kills spawned `claude`
+   processes and the thinking-proxy on panic or normal exit) and
+   `claude::resources` (sidecar resolution: `resource_dir()` first, dev
+   ancestor-walk fallback). Entry point is `src-tauri/src/main.rs` → `lib.rs::run()`.
 2. **WebView2 (React).** The entire UI: chat, tabs, input, side panels, overlays.
    State lives in a zustand store (`src/lib/store.ts`); the UI talks to Rust only
    through the typed wrappers in `src/lib/ipc.ts`.
@@ -38,6 +41,14 @@ flowchart TB
 4. **`thinking-proxy.cjs` (optional, Node).** A localhost HTTP proxy that injects
    the interleaved-thinking config into the upstream Anthropic request; the spawned
    `claude` is pointed at it via `ANTHROPIC_BASE_URL`. See [Thinking Proxy](thinking-proxy.md).
+
+   !!! note "`ANTHROPIC_BASE_URL` dual-use"
+       `ANTHROPIC_BASE_URL` serves two mutually exclusive roles: when the thinking
+       proxy is active it points `claude` at the localhost proxy; when a non-Claude
+       provider is selected it points `claude` at the user's router
+       (claude-code-router / LiteLLM / OpenRouter). The two cannot be active
+       simultaneously — enabling a non-Claude provider supersedes the proxy URL.
+
 5. **`yumi-mcp-bash.cjs` (opt-in, Node).** An MCP stdio server registered with the
    spawned `claude` when the bash monitor is on, so shell runs through
    `mcp__yumi-bash__RunBash` and streams live into the tool card. See
@@ -91,10 +102,13 @@ On finalize the store calls `_persist(tabId)`, writing the conversation to the
 
 After finalizing, the backend keeps **draining the lingering process's stdout
 silently** (so its pipe never blocks and its hooks complete) but stops emitting
-events. When the late `result` is drained it is still used — for analytics and a
-`claude-cost` side-channel event — but it is **pid-gated** so it can never corrupt
-a newer turn that reused the same session id. The full rationale is in
-[Reliability & Design](reliability-and-design.md).
+normal stream events. There is one exception: a trailing `rate_limit_event` (which
+the CLI emits after `end_turn`, in the order `end_turn → rate_limit_event →
+result`) is forwarded **even after finalize** so the rate-limit pills can update
+live — but only if this process still owns the session (pid-gated), preventing a
+lingering turn from pushing onto a newer one. When the late `result` is drained it
+is used for analytics and a `claude-cost` side-channel event, also pid-gated. The
+full rationale is in [Reliability & Design](reliability-and-design.md).
 
 ## The contract that holds it together
 

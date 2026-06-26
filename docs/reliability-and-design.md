@@ -12,7 +12,7 @@ tags: [design, reliability]
 
 Yumi spawns a real, full-featured CLI as a child process, which makes it subject to
 a class of subtle failures around environment inheritance, process lifetime, and
-hook timing. Four of these were root-caused and fixed; the fixes are load-bearing
+hook timing. Five of these were root-caused and fixed; the fixes are load-bearing
 and explain a lot of the backend's shape.
 
 ## 1. Environment-leak hang → env sanitization
@@ -41,9 +41,11 @@ at a dead `ANTHROPIC_BASE_URL`.
 connections (up to a 3 s budget) before returning its URL. If unconfirmed it returns
 `None`, and the spawner lets `claude` talk to the real API directly — so thinking
 display works when the proxy comes up and the **core chat is never blocked** when it
-doesn't. The script is located by walking up from the executable (never the original
-app's install dir), and a failed attempt is cached so it isn't retried. See
-[Thinking Proxy](thinking-proxy.md).
+doesn't. The script is resolved via `claude::resources::resolve_resource`, which
+checks `app.path().resource_dir()` first (correct in a production bundle) and falls
+back to the dev-layout ancestor-walk; a failed attempt is cached so it isn't
+retried. Once confirmed listening, the proxy PID is registered with `guard::track`
+so it dies with the host on panic or exit. See [Thinking Proxy](thinking-proxy.md).
 
 ## 3. Slow finalization → finalize on `end_turn`, not `result`
 
@@ -88,6 +90,24 @@ attach to a newer turn that reused the session id. Net: the dashboard and the co
 footer are populated accurately, and the chat stays as responsive as before. (Cost
 is shown live but not persisted — the `messages` schema has no cost column.)
 
+## 5. Orphaned children on host panic → `process::guard`
+
+**Symptom.** A Rust panic in the host process left spawned `claude` children
+(and the thinking-proxy node process) running indefinitely — invisible to the
+user and unable to be interrupted.
+
+**Cause.** The existing process registry tree-kills children on clean teardown
+(stop/interrupt/`RunEvent::Exit`), but a `std::panic` unwinds past the registry
+logic without firing those handlers.
+
+**Fix.** `process/guard.rs` maintains a process-wide set of child PIDs. A panic
+hook installed at startup (`guard::install_panic_hook`) calls `guard::kill_all()`
+before the previous hook runs, ensuring the whole set is tree-killed even on an
+abnormal exit. The Tauri `RunEvent::Exit` handler also calls `kill_all` for
+normal teardown. Both spawned `claude` turns (via `spawner.rs`) and the
+thinking-proxy (via `proxy.rs`) register their PIDs with `guard::track(pid)`;
+clean exits call `guard::untrack(pid)` so the set only holds live processes.
+
 ---
 
 ## Other design decisions
@@ -95,13 +115,14 @@ is shown live but not persisted — the `messages` schema has no cost column.)
 - **`[lib] crate-type = ["rlib"]`** — enables the `windows-gnu` build with no MSVC. See [Build, Run & Test](build-run-test.md).
 - **Non-lossy parser.** `stream_parser.rs` never silently drops a line; anything unknown becomes a `raw` event. This keeps the clone resilient to `stream-json` shape drift in future CLI versions.
 - **Spawn is non-bare.** The full `--output-format stream-json --verbose --include-partial-messages --dangerously-skip-permissions` form is used deliberately; a bare spawn breaks auth in this environment.
-- **Provider abstraction, Claude-only verified.** `provider.rs` keeps the multi-provider seam present and honest — Gemini/Codex/Kiro are located and arg-shaped best-effort, but labelled unverified rather than overclaimed.
+- **Provider routing, not binary shims.** `provider.rs` drives every provider through the same `claude` binary; non-Claude providers inject `ANTHROPIC_BASE_URL = routerBaseUrl` instead of locating a foreign CLI. A non-Claude provider with no router URL configured returns a clear `Err` — never a fake path. See [Features & Shortcuts](features-and-shortcuts.md).
+- **DB pruning for long-lived installs.** `Db::prune(max_sessions, max_analytics_age_ms, now_ms)` runs at startup; it caps stored sessions to the 500 most-recently-updated (cascading their messages) and drops analytics rows older than 1 year, bounding unbounded growth without silent data loss.
 - **Worktree isolation for agents.** Background agents run in throwaway git worktrees so a headless turn can never disturb the working tree; the change only lands on an explicit Merge.
 - **Intentional omissions.** Licensing/payments/auto-update/VSCode-companion are deliberately not cloned (see [Overview](overview.md)); the parity matrix labels them ⬜ so nothing is overclaimed downstream.
 
 ## See also
 
 - [Architecture](architecture.md) — where these fixes sit in the data flow.
-- [Backend (Rust)](backend-rust.md) — `spawner.rs`, `proxy.rs`, `process/registry.rs`.
+- [Backend (Rust)](backend-rust.md) — `spawner.rs`, `proxy.rs`, `process/registry.rs`, `process/guard.rs`.
 - [Troubleshooting](troubleshooting.md) — symptoms mapped to these causes.
 - `yumi/PARITY.md` — the "Reliability notes" section (authoritative).

@@ -68,7 +68,7 @@ Then dive into whichever subsystem you're working on.
 
 - **Stack:** Tauri 2 (Rust) + React 19 + TypeScript (Vite), WebView2, `rusqlite` (bundled, WAL).
 - **Builds:** `windows-gnu` toolchain, no MSVC needed (`[lib] crate-type = ["rlib"]`).
-- **Gates (last green 2026-06-25):** `cargo test` 25/25 · MCP server test 12/12 · `tsc && vite build` 0 errors · `tauri build --debug --no-bundle` → `yumi.exe`.
+- **Gates (last green 2026-06-26):** `cargo test` 38/38 · MCP server test 12/12 · `tsc && vite build` 0 errors · `tauri build --debug --no-bundle` → `yumi.exe`.
 - **Scope:** personal use; no commercial/licensing surface.
 
 !!! note "Where the code and the working docs live"
@@ -81,4 +81,4 @@ Then dive into whichever subsystem you're working on.
 
 ---
 
-*Last reviewed against source: 2026-06-25.*
+*Last reviewed against source: 2026-06-26.*
