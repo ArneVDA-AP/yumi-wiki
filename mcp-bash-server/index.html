@@ -733,6 +733,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#process-lifetime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Process lifetime
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#tests" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1143,6 +1154,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#process-lifetime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Process lifetime
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#tests" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1220,6 +1242,10 @@ config (<code>%TEMP%\yumi-mcp-&lt;sid&gt;.json</code>) that registers this scrip
 <code>--mcp-config &lt;path&gt; --disallowedTools Bash</code> to <code>claude</code>, so the model's shell runs
 through <code>mcp__yumi-bash__RunBash</code> instead of the built-in <code>Bash</code> tool. That
 redirection is what lets the Rust BASH-MONITOR tail and stream the output live.</p>
+<p>The script path is resolved by <code>claude::resources::resolve_resource</code>, which tries
+<code>app.path().resource_dir()/resources/yumi-mcp-bash.cjs</code> first (installed and
+<code>target/debug/resources</code> layouts) and falls back to walking up from the executable
+— so it works in a bundled install and in the <code>--no-bundle</code> dev build.</p>
 <ul>
 <li><strong>Protocol version:</strong> <code>2024-11-05</code>.</li>
 <li><strong>Server info:</strong> <code>{ name: "yumi", version: "1.0.0" }</code>.</li>
@@ -1297,6 +1323,12 @@ streamed <code>tick-1..4</code> into the tool card mid-run (<code>docs/evidence/
 <li>Poll interval <strong>250 ms</strong>, timeout <strong>5 minutes</strong>.</li>
 <li>The UI watches for the pending file, renders the choice popover, and writes the answer file.</li>
 </ul>
+<h2 id="process-lifetime">Process lifetime<a class="headerlink" href="#process-lifetime" title="Permanent link">&para;</a></h2>
+<p>The MCP bash server is a child of the <code>claude</code> process (passed via <code>--mcp-config</code>),
+not a separate long-lived sidecar. The spawned <code>claude</code> PID is registered with
+<code>process::guard::track</code> in <code>spawner.rs</code>, so both <code>claude</code> and any processes it owns
+are tree-killed if the host panics or exits — the server never leaks an idle node
+process.</p>
 <h2 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h2>
 <p><code>resources/tests/mcp_server.test.mjs</code> (run with <code>node</code>) drives the server over
 stdio: <code>initialize</code> (asserts protocol version <code>2024-11-05</code> and <code>serverInfo.name ==

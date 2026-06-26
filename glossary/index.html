@@ -1019,6 +1019,10 @@ emits and the React reducer consumes. The data model's backbone. See
 <a href="../ipc-contract/">IPC Contract</a>.</p>
 <p><strong><code>claude-cost</code></strong> — a side-channel Tauri event carrying a turn's cost + duration,
 emitted when the late <code>result</code> is drained after finalize. Pid-gated.</p>
+<p><strong><code>contextWindowFor</code></strong> — a TypeScript function in <code>src/lib/models.ts</code> that maps a
+model id string to its context-window size in tokens (e.g. 200 K for Claude, 1 M
+for Gemini/1M variants, 200 K default). Used by <code>TokenBar.tsx</code> to size the bar
+dynamically instead of the old hardcoded 200 K.</p>
 <p><strong>Finalize</strong> — the moment a turn flips Stop → Send and re-enables input. Triggered
 by <code>turn_done</code> (<code>end_turn</code>), not the late <code>result</code>. See <a href="../reliability-and-design/">Reliability &amp; Design</a>.</p>
 <p><strong><code>include-partial-messages</code></strong> — the <code>claude</code> flag that makes the CLI emit
@@ -1031,10 +1035,27 @@ via the thinking proxy.</p>
 <p><strong>Pid-gating / reuse-safety</strong> — using <code>is_current</code> / <code>unregister_if</code> so a lingering
 turn's late output can't corrupt a newer turn that reused the same session id. See
 <a href="../backend-rust/">Backend (Rust)</a>.</p>
-<p><strong>Provider</strong> — an LLM CLI backend (<code>provider.rs</code>): Claude (verified) or
-Gemini/Codex/Kiro (best-effort shims).</p>
+<p><strong><code>process::guard</code></strong> — a process-wide child-PID set (<code>src-tauri/src/process/guard.rs</code>).
+Every spawned child (claude turns + thinking-proxy) is <code>guard::track</code>ed; a
+<code>std::panic</code> hook installed at startup and the Tauri <code>RunEvent::Exit</code> handler both
+call <code>guard::kill_all</code>, tree-killing all tracked children so none leak on host
+panic or clean exit.</p>
+<p><strong>Provider</strong> — an LLM routing abstraction (<code>claude/provider.rs</code>). Every provider
+drives the same <code>claude</code> binary; a non-Claude provider (Gemini/Codex/Kiro) is
+realized by pointing that <code>claude</code> process at a translating router via
+<code>ANTHROPIC_BASE_URL</code> (<code>settings.routerBaseUrl</code>). No router configured → a clear
+<code>Err</code>, never a fake session.</p>
+<p><strong><code>rate_limit_event</code></strong> — a <code>stream-json</code> line the CLI emits after <code>end_turn</code>,
+carrying <code>{rate_limit_info:{status, resetsAt, rateLimitType}}</code>. The spawner
+forwards it to the frontend even after the turn has finalized (pid-gated), so the
+rate-limit pills can update live. See <a href="../ipc-contract/">IPC Contract</a>.</p>
 <p><strong><code>raw</code> event</strong> — the non-lossy fallback <code>ClaudeEvent</code> for any stream line the
 parser doesn't otherwise recognise.</p>
+<p><strong><code>resolve_resource</code></strong> — the sidecar-resolution function in
+<code>src-tauri/src/claude/resources.rs</code>. Tries <code>app.path().resource_dir()/resources/&lt;name&gt;</code>
+first (the bundled install layout), then falls back to a dev ancestor-walk from the
+executable's directory. Called by the spawner and proxy so sidecars are found in
+both bundled and <code>--no-bundle</code> dev builds.</p>
 <p><strong>Session id</strong> — Yumi's own per-tab id (validated <code>[A-Za-z0-9_-]{1,128}</code>), distinct
 from the <strong>claude session id</strong> (the real uuid the CLI reports via <code>system/init</code>,
 used for <code>--resume</code>).</p>

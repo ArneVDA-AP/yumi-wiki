@@ -976,10 +976,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#verification-gates-last-green-2026-06-25" class="md-nav__link">
+  <a href="#verification-gates-last-green-2026-06-26" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Verification gates (last green 2026-06-25)
+        Verification gates (last green 2026-06-26)
       
     </span>
   </a>
@@ -1267,10 +1267,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#verification-gates-last-green-2026-06-25" class="md-nav__link">
+  <a href="#verification-gates-last-green-2026-06-26" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Verification gates (last green 2026-06-25)
+        Verification gates (last green 2026-06-26)
       
     </span>
   </a>
@@ -1361,13 +1361,25 @@ Dev: <code>vite ^7.0.4</code>, <code>typescript ~5.8.3</code>, <code>@vitejs/plu
 <code>tokio 1</code> (<code>full</code>), <code>rusqlite 0.32</code> (<code>bundled</code>), <code>uuid 1</code> (<code>v4</code>), <code>dirs 5</code>,
 <code>chrono 0.4</code> (<code>serde, clock</code>), <code>anyhow 1</code>. Build-dep: <code>tauri-build 2</code>.
 Release profile: <code>strip = true</code>, <code>lto = false</code>.</p>
+<p>Three new modules were added in the v1 polish pass: <code>claude/resources.rs</code>
+(<code>resolve_resource</code> — bundles-aware sidecar resolution), <code>process/guard.rs</code>
+(process-wide PID set; panic hook + <code>RunEvent::Exit</code> kill all spawned children),
+and <code>platform.rs</code> (<code>CREATE_NO_WINDOW</code> constant + <code>now_millis()</code>, shared across
+modules to eliminate duplication).</p>
 <h2 id="app-configuration-tauriconfjson">App configuration (<code>tauri.conf.json</code>)<a class="headerlink" href="#app-configuration-tauriconfjson" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>productName</strong> <code>Yumi</code>, <strong>identifier</strong> <code>com.yumi.app</code>, <strong>version</strong> <code>0.1.0</code>.</li>
 <li><strong>beforeDevCommand</strong> <code>npm run dev</code>, <strong>devUrl</strong> <code>http://localhost:1420</code>; <strong>beforeBuildCommand</strong> <code>npm run build</code>, <strong>frontendDist</strong> <code>../dist</code>.</li>
 <li><strong>Window:</strong> title <code>Yumi</code>, 1400×900 (min 900×600), <code>backgroundColor #000000</code>, decorations on, resizable.</li>
 <li><strong>Security:</strong> CSP is <code>null</code> (permissive — a personal app).</li>
-<li><strong>Bundle:</strong> target <code>nsis</code> (Windows installer); icons from <code>src-tauri/icons/</code>.</li>
+<li><strong>Bundle:</strong> target <code>nsis</code> (Windows installer); icons from <code>src-tauri/icons/</code>. The <code>bundle.resources</code> map declares the three sidecars so they ship inside the installer and are available to <code>resolve_resource</code> at runtime:
+  <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">&quot;resources&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;../resources/yumi-mcp-bash.cjs&quot;</span><span class="p">:</span><span class="w">   </span><span class="s2">&quot;resources/yumi-mcp-bash.cjs&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">&quot;../resources/thinking-proxy.cjs&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;resources/thinking-proxy.cjs&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">&quot;../resources/yumi-plugin&quot;</span><span class="p">:</span><span class="w">         </span><span class="s2">&quot;resources/yumi-plugin&quot;</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">}</span>
+</code></pre></div>
+  During a <code>--no-bundle</code> debug build Cargo also stages these files to <code>src-tauri/target/debug/resources/</code>, so <code>resource_dir()</code> resolves them even without an installer.</li>
 <li><strong>Capabilities</strong> (<code>capabilities/default.json</code>): the <code>main</code> window is granted <code>core:default</code> and <code>opener:default</code>.</li>
 </ul>
 <p>The Vite dev server runs on a <strong>strict</strong> port <code>1420</code> (HMR on <code>1421</code>),
@@ -1375,25 +1387,25 @@ Release profile: <code>strip = true</code>, <code>lto = false</code>.</p>
 its watcher. TypeScript is <code>strict</code> with <code>noUnusedLocals</code>/<code>noUnusedParameters</code>,
 <code>ES2020</code> target, <code>react-jsx</code> transform, <code>moduleResolution: bundler</code>.</p>
 <h2 id="commands">Commands<a class="headerlink" href="#commands" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># install frontend deps</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>npm<span class="w"> </span>install
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># build the desktop app (debug, no installer)  → src-tauri/target/debug/yumi.exe</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>npx<span class="w"> </span>tauri<span class="w"> </span>build<span class="w"> </span>--debug<span class="w"> </span>--no-bundle
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># live dev (Vite + Tauri)</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>npm<span class="w"> </span>run<span class="w"> </span>tauri<span class="w"> </span>dev
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># frontend only</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>npm<span class="w"> </span>run<span class="w"> </span>dev<span class="w">          </span><span class="c1"># vite dev server</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>npm<span class="w"> </span>run<span class="w"> </span>build<span class="w">        </span><span class="c1"># tsc &amp;&amp; vite build  → dist/</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># install frontend deps</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>npm<span class="w"> </span>install
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># build the desktop app (debug, no installer)  → src-tauri/target/debug/yumi.exe</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>npx<span class="w"> </span>tauri<span class="w"> </span>build<span class="w"> </span>--debug<span class="w"> </span>--no-bundle
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># live dev (Vite + Tauri)</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>npm<span class="w"> </span>run<span class="w"> </span>tauri<span class="w"> </span>dev
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1"># frontend only</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>npm<span class="w"> </span>run<span class="w"> </span>dev<span class="w">          </span><span class="c1"># vite dev server</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>npm<span class="w"> </span>run<span class="w"> </span>build<span class="w">        </span><span class="c1"># tsc &amp;&amp; vite build  → dist/</span>
 </code></pre></div>
 <h3 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Rust unit tests (parser + registry + analytics) — 25 tests</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">cd</span><span class="w"> </span>src-tauri<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>cargo<span class="w"> </span><span class="nb">test</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># MCP server JSON-RPC test — 12 assertions</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nb">cd</span><span class="w"> </span>resources<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>node<span class="w"> </span>tests/mcp_server.test.mjs
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Rust unit tests (parser + provider + registry + guard + db + resources) — 38 tests</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">cd</span><span class="w"> </span>src-tauri<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>cargo<span class="w"> </span><span class="nb">test</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># MCP server JSON-RPC test — 12 assertions</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nb">cd</span><span class="w"> </span>resources<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>node<span class="w"> </span>tests/mcp_server.test.mjs
 </code></pre></div>
 <h2 id="artifacts">Artifacts<a class="headerlink" href="#artifacts" title="Permanent link">&para;</a></h2>
 <table>
@@ -1422,9 +1434,9 @@ its watcher. TypeScript is <code>strict</code> with <code>noUnusedLocals</code>/
 </tr>
 </tbody>
 </table>
-<h2 id="verification-gates-last-green-2026-06-25">Verification gates (last green 2026-06-25)<a class="headerlink" href="#verification-gates-last-green-2026-06-25" title="Permanent link">&para;</a></h2>
+<h2 id="verification-gates-last-green-2026-06-26">Verification gates (last green 2026-06-26)<a class="headerlink" href="#verification-gates-last-green-2026-06-26" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>cargo test</code> → <strong>25/25</strong>.</li>
+<li><code>cargo test</code> → <strong>38/38</strong>.</li>
 <li><code>node resources/tests/mcp_server.test.mjs</code> → <strong>12/12</strong>.</li>
 <li><code>tsc &amp;&amp; vite build</code> → <strong>0 errors</strong>.</li>
 <li><code>npx tauri build --debug --no-bundle</code> → builds <code>yumi.exe</code>.</li>

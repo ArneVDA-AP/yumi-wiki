@@ -1330,19 +1330,24 @@
 <td><code>get_setting(key)</code> / <code>set_setting(key, value)</code></td>
 <td>read/upsert a settings row</td>
 </tr>
+<tr>
+<td><code>prune(max_sessions, max_analytics_age_ms, now_ms)</code></td>
+<td>cap growth: keeps only the newest <code>max_sessions</code> sessions (cascading messages), deletes analytics rows older than <code>max_analytics_age_ms</code>; called once at startup with 500 and 1 year</td>
+</tr>
 </tbody>
 </table>
 <h3 id="analytics-aggregation">Analytics aggregation<a class="headerlink" href="#analytics-aggregation" title="Permanent link">&para;</a></h3>
 <p><code>get_analytics()</code> returns an <code>Analytics { totalCostUsd, totalInputTokens,
 totalOutputTokens, sessionsCount, byModel[], byDate[] }</code>:</p>
 <ul>
-<li><strong>Totals:</strong> <code>SUM(cost_usd)</code>, <code>SUM(input_tokens)</code>, <code>SUM(output_tokens)</code>, <code>COUNT(DISTINCT session_id)</code>.</li>
+<li><strong>Totals:</strong> <code>SUM(cost_usd)</code>, <code>SUM(input_tokens)</code>, <code>SUM(output_tokens)</code>. <code>sessionsCount</code> is <code>COUNT(*) FROM sessions</code> — the total number of session rows.</li>
 <li><strong>By model:</strong> <code>GROUP BY model</code>, ordered by <code>SUM(cost_usd) DESC</code> → <code>ByModel { model, cost, tokens, count }</code>.</li>
 <li><strong>By date:</strong> <code>GROUP BY strftime('%Y-%m-%d', created_at/1000, 'unixepoch')</code>, ordered <code>DESC</code> → <code>ByDate { date, cost, count }</code>.</li>
 </ul>
-<p>Two unit tests guard this: <code>record_and_aggregate_analytics</code> (multi-model,
-multi-day totals + ordering) and <code>empty_analytics_is_zeroed</code> (an empty DB returns
-all zeros / empty arrays).</p>
+<p>Three unit tests guard this: <code>record_and_aggregate_analytics</code> (multi-model,
+multi-day totals + ordering), <code>prune_caps_sessions_and_ages_out_analytics</code> (verifies
+session cap + analytics age-out), and <code>empty_analytics_is_zeroed</code> (an empty DB
+returns all zeros / empty arrays).</p>
 <blockquote>
 <p><strong>How analytics get recorded:</strong> the spawner parses the turn's drained <code>result</code>
 line and calls <code>record_analytics</code> once per turn — even after the UI has
@@ -1354,9 +1359,9 @@ UI waiting on the hook-delayed <code>result</code>. See <a href="../reliability-
 <p>Settings are persisted as a single JSON blob in the <code>settings</code> table (loaded by
 <code>get_settings</code>, written by <code>save_settings</code>). The current <strong>theme</strong> is also mirrored
 to a separate settings key, and <code>set_theme</code> updates both. The <code>Settings</code> struct
-uses <code>#[serde(rename_all = "camelCase")]</code>, and two fields carry serde defaults for
-forward-compatibility with older blobs: <code>provider</code> (defaults to <code>"claude"</code>) and
-<code>bash_monitor</code> (defaults to <code>false</code>).</p>
+uses <code>#[serde(rename_all = "camelCase")]</code>, and three fields carry serde defaults for
+forward-compatibility with older blobs: <code>provider</code> (defaults to <code>"claude"</code>),
+<code>router_base_url</code> (defaults to <code>""</code>), and <code>bash_monitor</code> (defaults to <code>false</code>).</p>
 <table>
 <thead>
 <tr>
@@ -1370,6 +1375,11 @@ forward-compatibility with older blobs: <code>provider</code> (defaults to <code
 <td><code>provider</code></td>
 <td><code>"claude"</code></td>
 <td>provider id</td>
+</tr>
+<tr>
+<td><code>routerBaseUrl</code></td>
+<td><code>""</code></td>
+<td><code>ANTHROPIC_BASE_URL</code> for routed non-Claude providers (LiteLLM / OpenRouter / claude-code-router); empty = none</td>
 </tr>
 <tr>
 <td><code>model</code></td>
@@ -1464,6 +1474,11 @@ returns them sorted by <code>lastOpened DESC</code> as <code>RecentProject { pat
 </table>
 <p><code>crash_recovery.rs</code> sweeps stale <code>yumi-bash-*.log</code> files (older than a day) at
 startup. The bundled <code>~/.claude</code> plugin is covered on <a href="../yumi-plugin/">Yumi Plugin</a>.</p>
+<p>Sidecar scripts (<code>yumi-mcp-bash.cjs</code>, <code>thinking-proxy.cjs</code>, <code>yumi-plugin/</code>) are
+declared as Tauri <code>bundle.resources</code> and staged to <code>src-tauri/target/debug/resources/</code>
+during a <code>cargo build</code>. <code>claude::resources::resolve_resource</code> tries
+<code>app.path().resource_dir()/resources/&lt;name&gt;</code> first (the installed and debug-build
+layout) and only falls back to the dev ancestor-walk if that path is absent.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../mcp-bash-server/">MCP Bash Server</a> — the sidecar that writes the <code>~/.yumi</code> files above.</li>

@@ -931,6 +931,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#5-orphaned-children-on-host-panic-processguard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Orphaned children on host panic → process::guard
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#other-design-decisions" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1121,6 +1132,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#5-orphaned-children-on-host-panic-processguard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Orphaned children on host panic → process::guard
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#other-design-decisions" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1185,7 +1207,7 @@
 <hr />
 <p>Yumi spawns a real, full-featured CLI as a child process, which makes it subject to
 a class of subtle failures around environment inheritance, process lifetime, and
-hook timing. Four of these were root-caused and fixed; the fixes are load-bearing
+hook timing. Five of these were root-caused and fixed; the fixes are load-bearing
 and explain a lot of the backend's shape.</p>
 <h2 id="1-environment-leak-hang-env-sanitization">1. Environment-leak hang → env sanitization<a class="headerlink" href="#1-environment-leak-hang-env-sanitization" title="Permanent link">&para;</a></h2>
 <p><strong>Symptom.</strong> Launching Yumi from <em>inside</em> a Claude Code session caused multi-minute
@@ -1206,9 +1228,11 @@ at a dead <code>ANTHROPIC_BASE_URL</code>.</p>
 connections (up to a 3 s budget) before returning its URL. If unconfirmed it returns
 <code>None</code>, and the spawner lets <code>claude</code> talk to the real API directly — so thinking
 display works when the proxy comes up and the <strong>core chat is never blocked</strong> when it
-doesn't. The script is located by walking up from the executable (never the original
-app's install dir), and a failed attempt is cached so it isn't retried. See
-<a href="../thinking-proxy/">Thinking Proxy</a>.</p>
+doesn't. The script is resolved via <code>claude::resources::resolve_resource</code>, which
+checks <code>app.path().resource_dir()</code> first (correct in a production bundle) and falls
+back to the dev-layout ancestor-walk; a failed attempt is cached so it isn't
+retried. Once confirmed listening, the proxy PID is registered with <code>guard::track</code>
+so it dies with the host on panic or exit. See <a href="../thinking-proxy/">Thinking Proxy</a>.</p>
 <h2 id="3-slow-finalization-finalize-on-end_turn-not-result">3. Slow finalization → finalize on <code>end_turn</code>, not <code>result</code><a class="headerlink" href="#3-slow-finalization-finalize-on-end_turn-not-result" title="Permanent link">&para;</a></h2>
 <p><strong>Symptom.</strong> The Stop button stayed "Stop" for ~47 s after the answer was already on
 screen.</p>
@@ -1243,20 +1267,35 @@ data.</p>
 attach to a newer turn that reused the session id. Net: the dashboard and the cost
 footer are populated accurately, and the chat stays as responsive as before. (Cost
 is shown live but not persisted — the <code>messages</code> schema has no cost column.)</p>
+<h2 id="5-orphaned-children-on-host-panic-processguard">5. Orphaned children on host panic → <code>process::guard</code><a class="headerlink" href="#5-orphaned-children-on-host-panic-processguard" title="Permanent link">&para;</a></h2>
+<p><strong>Symptom.</strong> A Rust panic in the host process left spawned <code>claude</code> children
+(and the thinking-proxy node process) running indefinitely — invisible to the
+user and unable to be interrupted.</p>
+<p><strong>Cause.</strong> The existing process registry tree-kills children on clean teardown
+(stop/interrupt/<code>RunEvent::Exit</code>), but a <code>std::panic</code> unwinds past the registry
+logic without firing those handlers.</p>
+<p><strong>Fix.</strong> <code>process/guard.rs</code> maintains a process-wide set of child PIDs. A panic
+hook installed at startup (<code>guard::install_panic_hook</code>) calls <code>guard::kill_all()</code>
+before the previous hook runs, ensuring the whole set is tree-killed even on an
+abnormal exit. The Tauri <code>RunEvent::Exit</code> handler also calls <code>kill_all</code> for
+normal teardown. Both spawned <code>claude</code> turns (via <code>spawner.rs</code>) and the
+thinking-proxy (via <code>proxy.rs</code>) register their PIDs with <code>guard::track(pid)</code>;
+clean exits call <code>guard::untrack(pid)</code> so the set only holds live processes.</p>
 <hr />
 <h2 id="other-design-decisions">Other design decisions<a class="headerlink" href="#other-design-decisions" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong><code>[lib] crate-type = ["rlib"]</code></strong> — enables the <code>windows-gnu</code> build with no MSVC. See <a href="../build-run-test/">Build, Run &amp; Test</a>.</li>
 <li><strong>Non-lossy parser.</strong> <code>stream_parser.rs</code> never silently drops a line; anything unknown becomes a <code>raw</code> event. This keeps the clone resilient to <code>stream-json</code> shape drift in future CLI versions.</li>
 <li><strong>Spawn is non-bare.</strong> The full <code>--output-format stream-json --verbose --include-partial-messages --dangerously-skip-permissions</code> form is used deliberately; a bare spawn breaks auth in this environment.</li>
-<li><strong>Provider abstraction, Claude-only verified.</strong> <code>provider.rs</code> keeps the multi-provider seam present and honest — Gemini/Codex/Kiro are located and arg-shaped best-effort, but labelled unverified rather than overclaimed.</li>
+<li><strong>Provider routing, not binary shims.</strong> <code>provider.rs</code> drives every provider through the same <code>claude</code> binary; non-Claude providers inject <code>ANTHROPIC_BASE_URL = routerBaseUrl</code> instead of locating a foreign CLI. A non-Claude provider with no router URL configured returns a clear <code>Err</code> — never a fake path. See <a href="../features-and-shortcuts/">Features &amp; Shortcuts</a>.</li>
+<li><strong>DB pruning for long-lived installs.</strong> <code>Db::prune(max_sessions, max_analytics_age_ms, now_ms)</code> runs at startup; it caps stored sessions to the 500 most-recently-updated (cascading their messages) and drops analytics rows older than 1 year, bounding unbounded growth without silent data loss.</li>
 <li><strong>Worktree isolation for agents.</strong> Background agents run in throwaway git worktrees so a headless turn can never disturb the working tree; the change only lands on an explicit Merge.</li>
 <li><strong>Intentional omissions.</strong> Licensing/payments/auto-update/VSCode-companion are deliberately not cloned (see <a href="../overview/">Overview</a>); the parity matrix labels them ⬜ so nothing is overclaimed downstream.</li>
 </ul>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../architecture/">Architecture</a> — where these fixes sit in the data flow.</li>
-<li><a href="../backend-rust/">Backend (Rust)</a> — <code>spawner.rs</code>, <code>proxy.rs</code>, <code>process/registry.rs</code>.</li>
+<li><a href="../backend-rust/">Backend (Rust)</a> — <code>spawner.rs</code>, <code>proxy.rs</code>, <code>process/registry.rs</code>, <code>process/guard.rs</code>.</li>
 <li><a href="../troubleshooting/">Troubleshooting</a> — symptoms mapped to these causes.</li>
 <li><code>yumi/PARITY.md</code> — the "Reliability notes" section (authoritative).</li>
 </ul>

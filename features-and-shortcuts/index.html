@@ -934,7 +934,7 @@
   <a href="#multi-provider" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Multi-provider 🟡
+        Multi-provider 🟢
       
     </span>
   </a>
@@ -957,6 +957,28 @@
     <span class="md-ellipsis">
       
         Per-message cost footer 🟢
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#process-guard-processguard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Process guard (process::guard) ✅
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sidecar-bundling-bundleresources-resolve_resource" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sidecar bundling (bundle.resources + resolve_resource) ✅
       
     </span>
   </a>
@@ -1274,7 +1296,7 @@
   <a href="#multi-provider" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Multi-provider 🟡
+        Multi-provider 🟢
       
     </span>
   </a>
@@ -1297,6 +1319,28 @@
     <span class="md-ellipsis">
       
         Per-message cost footer 🟢
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#process-guard-processguard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Process guard (process::guard) ✅
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sidecar-bundling-bundleresources-resolve_resource" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sidecar bundling (bundle.resources + resolve_resource) ✅
       
     </span>
   </a>
@@ -1494,17 +1538,20 @@ has no speech backend.</p>
 <h3 id="live-bash-monitor-opt-in-off-by-default">Live bash monitor 🟢 (opt-in, off by default)<a class="headerlink" href="#live-bash-monitor-opt-in-off-by-default" title="Permanent link">&para;</a></h3>
 <p>With the setting on, shell runs through the <a href="../mcp-bash-server/">MCP bash server</a>
 and streams <strong>live</strong> into the tool card's LIVE pane.</p>
-<h3 id="multi-provider">Multi-provider 🟡<a class="headerlink" href="#multi-provider" title="Permanent link">&para;</a></h3>
-<p>A provider abstraction (<code>provider.rs</code>) can target Gemini / GPT (Codex) / Kiro by
-locating their CLI and shaping args per provider. <strong>Only Claude is verified</strong>; the
-others are best-effort, unverified shims.</p>
+<h3 id="multi-provider">Multi-provider 🟢<a class="headerlink" href="#multi-provider" title="Permanent link">&para;</a></h3>
+<p>Every provider drives the <strong>same</strong> <code>claude</code> binary and stream-json parser. A
+non-Claude provider (Gemini / GPT / Kiro) is realized by pointing that process
+at a translating router (<code>ANTHROPIC_BASE_URL = settings.routerBaseUrl</code>) such as
+claude-code-router, LiteLLM, or OpenRouter. Selecting a non-Claude provider with
+no router URL configured returns a <strong>clear error</strong> — never a fake success.
+<code>provider.rs</code> exposes <code>build_spawn_plan(provider, prompt, model, resume, router_base_url) → SpawnPlan</code>; the args are identical for every provider, only the base URL differs. Claude is the fully-verified path; the routing mechanism itself is verified (unit-tested in <code>provider::tests</code>).</p>
 <h3 id="p1-surfaces">P1 surfaces 🟢<a class="headerlink" href="#p1-surfaces" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Rate-limit pills</strong> (5h / 7d) — the in-stream <code>rate_limit_event</code> is parsed; the <code>get_usage_limits</code> command is currently a stub, so live percentages aren't populated yet.</li>
+<li><strong>Rate-limit pills</strong> (5h / 7d) — honest + live. <code>get_usage_limits</code> returns an honestly-inert state (<code>live:false</code>, no fake %) until a real <code>rate_limit_event</code> arrives in-stream; the pills then light up with live status, window type, and reset time via <code>store._onEvent → parseRateLimit</code>. Until then they render greyed <code>—</code> with an "unavailable" tooltip. See <a href="../reliability-and-design/">Reliability &amp; Design</a>.</li>
 <li><strong>Git panel</strong> — status + working/staged diff.</li>
 <li><strong>Files panel + <code>@</code>-mentions</strong> — folder navigation and file insertion.</li>
 <li><strong>Command palette</strong> — fuzzy slash-command launcher.</li>
-<li><strong>Token/context bar</strong> — usage % from <code>message_delta</code>.</li>
+<li><strong>Token/context bar</strong> — fills live from the <code>message_start</code> usage snapshot (not only end-of-turn); sums <code>input + cacheRead + cacheCreation + output</code> tokens; window size is dynamic per model via <code>contextWindowFor()</code> in <code>src/lib/models.ts</code> (200K for Claude, ~1M for Gemini, etc.).</li>
 <li><strong>Project picker + recent projects</strong>.</li>
 <li><strong>Analytics dashboard</strong> — real totals, by-model, by-date (see <a href="../data-and-persistence/">Data &amp; Persistence</a>).</li>
 </ul>
@@ -1512,6 +1559,21 @@ others are best-effort, unverified shims.</p>
 <p>Each finalized assistant message shows <code>⏱ duration</code> + <code>⚡ $cost</code>, attached via the
 late <code>claude-cost</code> side channel. Shown live; <strong>not</strong> persisted to the DB (the
 message schema has no cost column), so it does not survive a reload-from-history.</p>
+<h3 id="process-guard-processguard">Process guard (<code>process::guard</code>) ✅<a class="headerlink" href="#process-guard-processguard" title="Permanent link">&para;</a></h3>
+<p>A process-wide child-PID set (<code>src-tauri/src/process/guard.rs</code>) ensures spawned
+<code>claude</code> children AND the thinking-proxy node process die with the host. Every
+child PID is tracked via <code>guard::track(pid)</code> at spawn time. A <code>std::panic</code> hook
+installed at startup calls <code>guard::kill_all()</code> before unwinding; the Tauri
+<code>RunEvent::Exit</code> handler does the same on normal teardown. This covers the
+failure mode where a host panic would otherwise orphan background processes.
+See <a href="../reliability-and-design/">Reliability &amp; Design</a>.</p>
+<h3 id="sidecar-bundling-bundleresources-resolve_resource">Sidecar bundling (<code>bundle.resources</code> + <code>resolve_resource</code>) ✅<a class="headerlink" href="#sidecar-bundling-bundleresources-resolve_resource" title="Permanent link">&para;</a></h3>
+<p>The <code>.cjs</code> sidecars (<code>yumi-mcp-bash.cjs</code>, <code>thinking-proxy.cjs</code>) and the
+<code>yumi-plugin/</code> tree are declared as Tauri <code>resources</code> in <code>tauri.conf.json</code>.
+At runtime <code>claude::resources::resolve_resource</code> tries <code>app.path().resource_dir()</code>
+first (works in both the <code>--no-bundle</code> dev build and a production installer),
+then falls back to the dev-layout ancestor-walk. This means the app will find
+its sidecars in a production bundle, not only during development.</p>
 <h3 id="intentionally-omitted">Intentionally omitted ⬜<a class="headerlink" href="#intentionally-omitted" title="Permanent link">&para;</a></h3>
 <p>Licensing / payments / paywall, auto-update, and the VSCode companion extension.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>

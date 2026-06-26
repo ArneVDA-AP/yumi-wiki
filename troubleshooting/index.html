@@ -970,6 +970,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#sidecars" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sidecars
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#orphaned-processes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Orphaned processes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#build" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1143,6 +1165,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#sidecars" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sidecars
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#orphaned-processes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Orphaned processes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#build" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1249,11 +1293,19 @@ Expected: cost is shown live via the <code>claude-cost</code> side channel but <
 persisted (the <code>messages</code> schema has no cost column). The analytics dashboard,
 which <em>is</em> persisted, still reflects it.</p>
 <h2 id="rate-limits">Rate limits<a class="headerlink" href="#rate-limits" title="Permanent link">&para;</a></h2>
-<p><strong>The 5h / 7d pills show nothing.</strong>
-The <code>get_usage_limits</code> command is currently a <strong>stub</strong> returning empty values, so
-the pills render but have no live percentages. The in-stream <code>rate_limit_event</code> is
-parsed, but the polled limits aren't wired yet. This is the honest status in
-<code>PARITY.md</code>.</p>
+<p><strong>The 5h / 7d pills show <code>—</code> (greyed).</strong>
+This is correct at startup and is not a bug. There is no reliable local source for
+rolling 5h/7d window percentages (<code>~/.claude/stats-cache.json</code> is historical token
+stats, not a window %). <code>get_usage_limits</code> returns an honestly-inert state
+(<code>{rateLimited:false, live:false, windowType:None}</code>), and the pills render greyed
+<code>—</code> with an "unavailable" tooltip rather than display a fake number.</p>
+<p><strong>The pills never light up after a real turn.</strong>
+The in-stream <code>rate_limit_event</code> (emitted by the CLI after <code>end_turn</code>, before
+<code>result</code>) is the live signal. It is parsed by <code>streamParse.ts</code>, routed through
+<code>store._onEvent</code> → <code>parseRateLimit()</code>, and reflected in the pills. If the pills
+stay grey after a real turn, confirm the spawner build includes the post-finalize
+<code>rate_limit_event</code> forwarding path (<code>spawner.rs</code> pid-gated <code>RateLimit</code> branch). A
+greyed pill at startup that lights up after a turn is working correctly.</p>
 <h2 id="background-agents">Background agents<a class="headerlink" href="#background-agents" title="Permanent link">&para;</a></h2>
 <p><strong>"start_agent" fails or does nothing.</strong>
 Background agents require the tab's <strong>cwd to be a git repo</strong> — they create a
@@ -1263,6 +1315,24 @@ directory the agent degrades with a clear status. See <a href="../backend-rust/"
 <code>merge_agent_branch</code> retires the worktree on success and <code>remove_agent</code> cleans it
 up; if one is orphaned, remove the worktree dir under <code>%TEMP%\yumi-agents\</code> and
 delete the <code>yumi/agent-&lt;id&gt;</code> branch manually.</p>
+<h2 id="sidecars">Sidecars<a class="headerlink" href="#sidecars" title="Permanent link">&para;</a></h2>
+<p><strong>"sidecar not found" / MCP bash server or proxy doesn't start.</strong>
+Sidecars (<code>yumi-mcp-bash.cjs</code>, <code>thinking-proxy.cjs</code>, <code>yumi-plugin/</code>) are located by
+<code>claude::resources::resolve_resource</code>: it checks <code>app.path().resource_dir()/resources/&lt;name&gt;</code>
+first (the bundled layout), then walks up from the executable for a sibling
+<code>resources/&lt;name&gt;</code> (the <code>--no-bundle</code> dev build). In a <code>--no-bundle</code> dev build,
+<code>cargo build</code> must have been run at least once so the <code>resources/</code> directory
+exists at <code>src-tauri/target/debug/resources/</code>. If a sidecar is still not found,
+confirm <code>bundle.resources</code> is declared in <code>tauri.conf.json</code> and run
+<code>npx tauri build --debug --no-bundle</code> to refresh the staged resources.</p>
+<h2 id="orphaned-processes">Orphaned processes<a class="headerlink" href="#orphaned-processes" title="Permanent link">&para;</a></h2>
+<p><strong>Spawned <code>claude</code> or proxy processes survive after Yumi closes.</strong>
+<code>process::guard</code> tracks every spawned child PID in a process-wide set and
+tree-kills them on <code>RunEvent::Exit</code> (normal teardown) and on a <code>std::panic</code>. If
+processes survive, confirm <code>guard::install_panic_hook()</code> is called at startup
+(<code>lib.rs</code>) and that the <code>RunEvent::Exit</code> arm calls <code>guard::kill_all()</code>. On Windows,
+<code>kill_process_tree</code> uses <code>taskkill /T /F</code> — confirm the pid set is non-empty at
+shutdown (i.e. <code>guard::track</code> was called for both the <code>claude</code> child and the proxy).</p>
 <h2 id="build">Build<a class="headerlink" href="#build" title="Permanent link">&para;</a></h2>
 <p><strong>Build fails asking for MSVC / <code>link.exe</code>.</strong>
 Yumi targets <code>windows-gnu</code>. Confirm <code>[lib] crate-type = ["rlib"]</code> in

@@ -1198,17 +1198,25 @@ the real Anthropic API but <strong>injects the thinking configuration</strong> i
 body first. It is enabled by the <code>thinking</code> setting (default <strong>on</strong>) and is
 Claude-only.</p>
 <h2 id="launcher-claudeproxyrs">Launcher: <code>claude/proxy.rs</code><a class="headerlink" href="#launcher-claudeproxyrs" title="Permanent link">&para;</a></h2>
-<p><code>ProxyState::ensure_running()</code> is lazy and cached:</p>
+<p><code>ProxyState::ensure_running(script: PathBuf)</code> is lazy and cached. The caller
+(<code>spawner.rs</code>) is responsible for locating the script via
+<code>claude::resources::resolve_resource</code>, which tries
+<code>app.path().resource_dir()/resources/thinking-proxy.cjs</code> FIRST (the installed and
+<code>target/debug/resources</code> layout) and only falls back to walking up from the
+executable — so resolution no longer depends on the dev ancestor-walk alone.</p>
+<p>Once called with the resolved path:</p>
 <ol>
 <li>Find a free port in <strong>18800–18899</strong>.</li>
-<li>Locate the script by walking up from the executable for <code>resources/thinking-proxy.cjs</code> (works in both the bundled layout and <code>--no-bundle</code> dev — it never depends on the original app's install dir).</li>
 <li>Spawn <code>node &lt;script&gt;</code> with <code>THINKING_PROXY_PORT=&lt;port&gt;</code>.</li>
 <li><strong>Probe before use:</strong> TCP-connect to the port (retrying ~100 ms, up to a 3 s budget). Only if the connection succeeds does it return <code>http://127.0.0.1:&lt;port&gt;</code>.</li>
+<li>Register the proxy PID with <code>process::guard::track</code> so it is tree-killed on host panic or normal exit — the proxy never leaks an idle node process per app run.</li>
 <li>If <code>node</code> is missing or the probe times out → return <code>None</code> (the spawner then lets <code>claude</code> talk to the real API directly) and <strong>do not retry</strong> for the rest of the app session.</li>
 </ol>
 <p>This probe-before-use is a deliberate reliability fix: returning the URL as soon as
 <code>node</code> merely <em>started</em> (before it was listening) could leave <code>claude</code> pointed at a
 dead URL and hang the whole chat. See <a href="../reliability-and-design/">Reliability &amp; Design</a>.</p>
+<p>On a failed probe, <code>ensure_running</code> kills the (possibly hung) child before returning
+<code>None</code>, so no idle node process is ever left behind even when the proxy fails to start.</p>
 <h2 id="injection-thinking-proxycjs">Injection: <code>thinking-proxy.cjs</code><a class="headerlink" href="#injection-thinking-proxycjs" title="Permanent link">&para;</a></h2>
 <p>The proxy inspects the model in each request and injects the appropriate thinking block:</p>
 <table>

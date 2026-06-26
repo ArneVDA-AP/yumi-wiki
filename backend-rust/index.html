@@ -588,6 +588,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#resourcesrs-sidecar-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        resources.rs — sidecar resolution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#sessionrs-session-id-helpers" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -626,10 +637,49 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#process-control-processregistryrs" class="md-nav__link">
+  <a href="#process-control-process" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Process control (process/registry.rs)
+        Process control (process/)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Process control (process/)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#processregistryrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        process/registry.rs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#processguardrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        process/guard.rs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shared-utilities-platformrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared utilities (platform.rs)
       
     </span>
   </a>
@@ -1338,6 +1388,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#resourcesrs-sidecar-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        resources.rs — sidecar resolution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#sessionrs-session-id-helpers" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1376,10 +1437,49 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#process-control-processregistryrs" class="md-nav__link">
+  <a href="#process-control-process" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Process control (process/registry.rs)
+        Process control (process/)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Process control (process/)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#processregistryrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        process/registry.rs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#processguardrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        process/guard.rs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shared-utilities-platformrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared utilities (platform.rs)
       
     </span>
   </a>
@@ -1489,23 +1589,26 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>src-tauri/src/
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  main.rs              entry point
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  lib.rs               Tauri builder + command registry
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  state.rs             shared AppState
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  crash_recovery.rs    startup cleanup of stale stream logs
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>  agents.rs            background agents (git-worktree isolation)
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>  db.rs                SQLite schema + queries (see Data &amp; Persistence)
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>  process/
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    registry.rs        PID registry + Windows tree-kill
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>  claude/
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    binary.rs          locate the claude binary + version
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    spawner.rs         spawn claude, stream stdout → events
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    session.rs         session-id helpers/validation
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    stream_parser.rs   stream-json → ClaudeEvent (pure)
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    proxy.rs           thinking-proxy launcher
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    provider.rs        multi-provider abstraction
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>  mcp/
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    monitor.rs         BASH-MONITOR: tail temp log → bash-output
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>  commands/
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    claude.rs info.rs db.rs git.rs fs.rs settings.rs
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  platform.rs          CREATE_NO_WINDOW + now_millis (shared constants)
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  state.rs             shared AppState
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>  crash_recovery.rs    startup cleanup of stale stream logs
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>  agents.rs            background agents (git-worktree isolation)
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>  db.rs                SQLite schema + queries (see Data &amp; Persistence)
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>  process/
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    registry.rs        PID registry + Windows tree-kill
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    guard.rs           process-wide PID set + panic/exit kill_all
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>  claude/
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    binary.rs          locate the claude binary + version
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    spawner.rs         spawn claude, stream stdout → events
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    session.rs         session-id helpers/validation
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    stream_parser.rs   stream-json → ClaudeEvent (pure)
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    proxy.rs           thinking-proxy launcher
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    provider.rs        multi-provider abstraction (build_spawn_plan)
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    resources.rs       resolve bundled sidecar paths (resource_dir-first)
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>  mcp/
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    monitor.rs         BASH-MONITOR: tail temp log → bash-output
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>  commands/
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    claude.rs info.rs db.rs git.rs fs.rs settings.rs
 </code></pre></div>
 <p>A note on the build: spawner/provider/agents are gated <code>#[cfg(not(test))]</code> so that
 <code>cargo test</code> (which can't initialise the WebView2 loader on <code>windows-gnu</code>) still
@@ -1518,10 +1621,12 @@ compiles and runs the pure unit tests. The crate is <code>[lib] crate-type = ["r
 <h3 id="librs-pub-fn-run"><code>lib.rs</code> — <code>pub fn run()</code><a class="headerlink" href="#librs-pub-fn-run" title="Permanent link">&para;</a></h3>
 <p>Builds the Tauri application:
 1. <code>crash_recovery::cleanup_stale_streams()</code> removes stale <code>yumi-bash-*.log</code> files (&gt; 1 day old) before anything else.
-2. Opens the database (<code>Db::open()</code> → <code>~/.yumi/yumi.db</code>, creates tables if missing).
-3. Creates <code>AppState { registry, proxy, db, agents }</code> as Tauri-managed state.
-4. Registers the <code>tauri-plugin-opener</code> plugin.
-5. Registers <strong>all</strong> commands via <code>generate_handler![]</code> (see the table below).</p>
+2. <code>process::guard::install_panic_hook()</code> wraps the default panic handler so all tracked child PIDs are tree-killed before the process unwinds — ensuring a host panic never orphans a spawned <code>claude</code> or thinking-proxy.
+3. Opens the database (<code>Db::open()</code> → <code>~/.yumi/yumi.db</code>, creates tables if missing) and immediately calls <code>db.prune(500, 365_days_ms, now_ms)</code> to cap growth: keeps the newest 500 sessions and ages out analytics rows older than one year.
+4. Creates <code>AppState { registry, proxy, db, agents }</code> as Tauri-managed state.
+5. Registers the <code>tauri-plugin-opener</code> plugin.
+6. Registers <strong>all</strong> commands via <code>generate_handler![]</code> (see the table below).
+7. On <code>RunEvent::Exit</code> calls <code>process::guard::kill_all()</code> so any still-running children are cleaned up on normal window close.</p>
 <h3 id="staters-appstate"><code>state.rs</code> — <code>AppState</code><a class="headerlink" href="#staters-appstate" title="Permanent link">&para;</a></h3>
 <p>The shared, Tauri-managed state struct:</p>
 <table>
@@ -1573,37 +1678,21 @@ are silently ignored — it must never block startup.</p>
 <p><code>enum Provider { Claude, Gemini, Codex, Kiro }</code>.</p>
 <ul>
 <li><code>from_id(Option&lt;&amp;str&gt;)</code> maps <code>"claude"</code>→Claude, <code>"gemini"</code>→Gemini, <code>"codex"|"gpt"</code>→Codex, <code>"kiro"</code>→Kiro; anything else defaults to <strong>Claude</strong>.</li>
-<li><code>locate()</code> finds the provider's binary via the same PATH/<code>~/.local/bin</code> search.</li>
-<li><code>build_args(prompt, model, resume)</code> builds the CLI arguments:</li>
-<li><strong>Claude (verified):</strong> <code>--output-format stream-json --verbose --include-partial-messages --dangerously-skip-permissions [--resume &lt;uuid&gt;] -p &lt;prompt&gt; --model &lt;model&gt;</code>.</li>
-<li><strong>Gemini / Codex / Kiro (best-effort, unverified):</strong> a minimal <code>-m &lt;model&gt; -p/&lt;prompt&gt;</code> shape mirroring Yume's shim. Only Claude is wired and tested.</li>
+<li><code>build_spawn_plan(provider, prompt, model, resume, router_base_url) -&gt; Result&lt;SpawnPlan, String&gt;</code> builds the args and resolves the routing strategy. Every provider drives the <strong>same</strong> <code>claude</code> binary with the same <code>stream-json</code> flags (<code>--output-format stream-json --verbose --include-partial-messages --dangerously-skip-permissions [-p &lt;prompt&gt;] [--resume &lt;uuid&gt;] [--model &lt;model&gt;]</code>). <code>--resume</code> is included for <strong>all</strong> providers when a resume id is present — the transcript replay works against whatever endpoint <code>ANTHROPIC_BASE_URL</code> points at. <code>SpawnPlan { args, base_url }</code> carries the args plus an optional <code>ANTHROPIC_BASE_URL</code> override: <code>None</code> for Claude (real Anthropic API), <code>Some(router_url)</code> for a routed provider. A non-Claude provider with an empty <code>router_base_url</code> returns a clear <code>Err</code> — never a fake success.</li>
 </ul>
+<p>There is no <code>locate()</code>, <code>build_args()</code>, or per-provider binary lookup in v1. Spawning foreign CLIs (<code>gemini</code>, <code>codex</code>) was explicitly removed: those CLIs don't emit <code>stream-json</code> and could never render.</p>
 <h3 id="spawnerrs-spawn_claudeapp-opts-resultstringstring"><code>spawner.rs</code> — <code>spawn_claude(app, opts) -&gt; Result&lt;String,String&gt;</code><a class="headerlink" href="#spawnerrs-spawn_claudeapp-opts-resultstringstring" title="Permanent link">&para;</a></h3>
 <p>The heart of the backend. <code>SpawnOpts</code> carries <code>session_id, cwd, prompt, model,
-provider?, resume_id?, thinking?, bash_monitor?</code>.</p>
+provider?, router_base_url?, resume_id?, thinking?, bash_monitor?</code>.</p>
 <p>Flow:
-1. <strong>Resolve provider</strong> (<code>Provider::from_id</code>). <code>--resume &lt;uuid&gt;</code> added when <code>resume_id</code> is present (Claude only).
-2. <strong>Bash monitor (opt-in, Claude only).</strong> Writes a temp MCP config at
-   <code>%TEMP%\yumi-mcp-&lt;session_id&gt;.json</code> registering <code>resources/yumi-mcp-bash.cjs</code>
-   (with <code>--session-id=</code> and <code>--stream-file=</code>), and passes <code>--mcp-config &lt;path&gt;
-   --disallowedTools Bash</code> so the model routes shell through
-   <code>mcp__yumi-bash__RunBash</code>.
-3. <strong>Thinking proxy (opt-in, Claude only).</strong> <code>state.proxy.ensure_running()</code> returns
-   an <code>ANTHROPIC_BASE_URL</code> only if the proxy is confirmed listening.
-4. <strong>Env sanitization.</strong> Strips <code>CLAUDE_CODE_*</code>, <code>CLAUDECODE</code>, <code>ANTHROPIC_BASE_URL</code>,
-   <code>CLAUDE_STREAM*</code> from the child so a parent Claude Code session can't leak in.
-5. <strong>Spawn</strong> with <code>stdin: null</code>, <code>stdout/stderr: piped</code>, sets
-   <code>CLAUDE_CODE_ENTRYPOINT=yumi</code>, <code>YUMI_STREAM_FILE=%TEMP%\yumi-bash-&lt;sid&gt;.log</code>,
-   <code>YUMI_SESSION_ID=&lt;sid&gt;</code>. Registers the child PID in the registry.
-6. <strong>Stream loop.</strong> Reads stdout line by line → <code>parse_line</code> → emits events.
-   Finalizes on <code>turn_done</code>/<code>result</code>; afterwards keeps draining stdout silently
-   (no more emits) so the lingering process's pipe never blocks.
-7. <strong>Analytics + late cost.</strong> When the <code>result</code> line is drained, records an
-   analytics row (<code>db.record_analytics</code>) and — if the turn was already finalized —
-   emits a <code>claude-cost</code> event, <strong>pid-gated</strong> by <code>registry.is_current</code> so it can't
-   attach to a newer turn.
-8. <strong>Exit.</strong> <code>child.wait()</code>, abort the monitor task, delete the temp MCP config,
-   <code>registry.unregister_if(sid, pid)</code> (reuse-safe).</p>
+1. <strong>Resolve provider + plan</strong> (<code>Provider::from_id</code> → <code>build_spawn_plan</code>). <code>--resume &lt;uuid&gt;</code> is added for <strong>all</strong> providers when <code>resume_id</code> is present — the transcript replay works against whatever endpoint <code>ANTHROPIC_BASE_URL</code> points at. A non-Claude provider with no <code>router_base_url</code> returns a clear <code>Err</code> here.
+2. <strong>Bash monitor (opt-in).</strong> <code>write_bash_mcp_config</code> locates <code>yumi-mcp-bash.cjs</code> via <code>resolve_resource</code>, writes a temp MCP config at <code>%TEMP%\yumi-mcp-&lt;session_id&gt;.json</code>, and passes <code>--mcp-config &lt;path&gt; --disallowedTools Bash</code> so the model routes shell through <code>mcp__yumi-bash__RunBash</code>. The bash monitor IS wired and functional.
+3. <strong>Base-URL resolution.</strong> A routed provider's <code>plan.base_url</code> takes priority (set by <code>build_spawn_plan</code>). For Claude with thinking enabled, <code>resolve_resource</code> locates <code>thinking-proxy.cjs</code> and passes the resolved <code>PathBuf</code> to <code>state.proxy.ensure_running(script)</code>, which returns an <code>ANTHROPIC_BASE_URL</code> only if the proxy is confirmed listening.
+4. <strong>Env sanitization.</strong> Strips <code>CLAUDE_CODE_*</code>, <code>CLAUDECODE</code>, <code>ANTHROPIC_BASE_URL</code>, <code>CLAUDE_STREAM*</code> from the child so a parent Claude Code session can't leak in.
+5. <strong>Spawn</strong> with <code>stdin: null</code>, <code>stdout/stderr: piped</code>, sets <code>CLAUDE_CODE_ENTRYPOINT=yumi</code>, <code>YUMI_STREAM_FILE</code>, <code>YUMI_SESSION_ID</code>. Registers the child PID in the session registry <strong>and</strong> calls <code>process::guard::track(pid)</code> so the child is killed on a host panic (not only on a clean registry interrupt).
+6. <strong>Stream loop.</strong> Reads stdout line by line → <code>parse_line</code> → emits events. Finalizes on <code>turn_done</code>/<code>result</code>; afterwards keeps draining stdout silently so the lingering process's pipe never blocks.
+7. <strong>Analytics + late cost.</strong> When the <code>result</code> line is drained, records an analytics row (<code>db.record_analytics</code>) and — if the turn was already finalized — emits a <code>claude-cost</code> event, <strong>pid-gated</strong> by <code>registry.is_current</code> so it can't attach to a newer turn.
+8. <strong>Exit.</strong> <code>child.wait()</code>, abort the monitor task, delete the temp MCP config, <code>registry.unregister_if(sid, pid)</code> (reuse-safe), <code>guard::untrack(pid)</code>.</p>
 <p>Events emitted (payloads use camelCase):</p>
 <table>
 <thead>
@@ -1641,6 +1730,8 @@ provider?, resume_id?, thinking?, bash_monitor?</code>.</p>
 </tr>
 </tbody>
 </table>
+<h3 id="resourcesrs-sidecar-resolution"><code>resources.rs</code> — sidecar resolution<a class="headerlink" href="#resourcesrs-sidecar-resolution" title="Permanent link">&para;</a></h3>
+<p><code>resolve_resource(app, name) -&gt; Option&lt;PathBuf&gt;</code> locates a bundled sidecar in two steps: (1) <code>app.path().resource_dir()/resources/&lt;name&gt;</code> — the layout a real installed bundle ships; (2) ancestor-walk from the executable for a sibling <code>resources/&lt;name&gt;</code> — the dev <code>--no-bundle</code> layout. The resource-dir check comes <strong>first</strong> so a bundled install never falls back to the dev walk. The pure <code>ancestor_resource(start, name)</code> helper is unit-tested in <code>cargo test</code>.</p>
 <h3 id="sessionrs-session-id-helpers"><code>session.rs</code> — session-id helpers<a class="headerlink" href="#sessionrs-session-id-helpers" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>resume_arg(Option&lt;&amp;str&gt;)</code> trims and drops empty resume ids.</li>
@@ -1658,10 +1749,11 @@ parser unit tests in <code>cargo test</code>.</p>
 <strong>18800–18899</strong>, then <strong>TCP-probes that it is actually listening</strong> (up to 3 s)
 before returning <code>http://127.0.0.1:&lt;port&gt;</code>. If node is missing or the probe times
 out it returns <code>None</code> (→ claude talks to the real API directly) and never retries
-that app session. The script is located by walking up from the executable looking
-for <code>resources/thinking-proxy.cjs</code>. See <a href="../thinking-proxy/">Thinking Proxy</a>.</p>
+that app session.</p>
+<p><code>ensure_running(script: PathBuf)</code> takes the already-resolved path to <code>thinking-proxy.cjs</code> — the caller (<code>spawner.rs</code>) resolves it via <code>resolve_resource</code> first (resource-dir-first, ancestor-walk fallback). The proxy PID is tracked via <code>process::guard::track(pid)</code> so it is killed with the host on panic or normal exit, not just on a clean tree-kill. See <a href="../thinking-proxy/">Thinking Proxy</a>.</p>
 <hr />
-<h2 id="process-control-processregistryrs">Process control (<code>process/registry.rs</code>)<a class="headerlink" href="#process-control-processregistryrs" title="Permanent link">&para;</a></h2>
+<h2 id="process-control-process">Process control (<code>process/</code>)<a class="headerlink" href="#process-control-process" title="Permanent link">&para;</a></h2>
+<h3 id="processregistryrs"><code>process/registry.rs</code><a class="headerlink" href="#processregistryrs" title="Permanent link">&para;</a></h3>
 <p><code>ProcessRegistry</code> is a <code>Mutex&lt;HashMap&lt;String, u32&gt;&gt;</code> mapping sessionId → PID.</p>
 <table>
 <thead>
@@ -1707,6 +1799,21 @@ for <code>resources/thinking-proxy.cjs</code>. See <a href="../thinking-proxy/">
 grandchildren. On other platforms it falls back to <code>kill -TERM</code>. The reuse-safe
 <code>unregister_if</code>/<code>is_current</code> pair is what lets a late, hook-delayed <code>result</code> be
 processed without corrupting a newer turn.</p>
+<h3 id="processguardrs"><code>process/guard.rs</code><a class="headerlink" href="#processguardrs" title="Permanent link">&para;</a></h3>
+<p>A process-wide guard that ensures spawned children (both <code>claude</code> sessions and the thinking proxy) die with the host — not only on a clean registry interrupt.</p>
+<ul>
+<li><code>track(pid)</code> / <code>untrack(pid)</code> — insert/remove a PID from a global <code>Mutex&lt;HashSet&lt;u32&gt;&gt;</code>.</li>
+<li><code>kill_all()</code> — drain the set and tree-kill every PID (best-effort).</li>
+<li><code>install_panic_hook()</code> — wraps the existing panic handler with a <code>kill_all()</code> call, installed once at startup via <code>OnceLock</code>. This is what prevents a host panic from orphaning spawned <code>claude</code> processes.</li>
+</ul>
+<p><code>spawner.rs</code> calls <code>guard::track(pid)</code> immediately after spawning and <code>guard::untrack(pid)</code> on clean process exit. <code>proxy.rs</code> calls <code>guard::track(pid)</code> after the proxy is confirmed listening. <code>lib.rs</code> calls <code>guard::kill_all()</code> in the <code>RunEvent::Exit</code> handler for normal window close.</p>
+<hr />
+<h2 id="shared-utilities-platformrs">Shared utilities (<code>platform.rs</code>)<a class="headerlink" href="#shared-utilities-platformrs" title="Permanent link">&para;</a></h2>
+<p><code>platform.rs</code> holds cross-cutting constants and helpers used across multiple modules:</p>
+<ul>
+<li><code>CREATE_NO_WINDOW: u32</code> (<code>#[cfg(windows)]</code>) — the Win32 creation flag that hides the console window for all spawned child processes. Declared once here and imported by the seven modules that spawn children: <code>claude/{binary,proxy,spawner}.rs</code>, <code>agents.rs</code>, <code>process/registry.rs</code>, and <code>commands/{fs,git}.rs</code>.</li>
+<li><code>now_millis() -&gt; i64</code> — wall-clock epoch milliseconds (used by analytics recording and <code>db.prune</code>).</li>
+</ul>
 <hr />
 <h2 id="background-agents-agentsrs">Background agents (<code>agents.rs</code>)<a class="headerlink" href="#background-agents-agentsrs" title="Permanent link">&para;</a></h2>
 <p>Runs a headless <code>claude -p</code> turn in an <strong>isolated git worktree</strong> so it can't
@@ -1771,9 +1878,7 @@ signatures and the matching <code>ipc.ts</code> wrappers are on the <a href="../
 <li><strong>Agents:</strong> <code>list_agents</code>, <code>start_agent</code>, <code>merge_agent_branch</code>, <code>cancel_agent</code>, <code>remove_agent</code>, <code>agent_diff</code></li>
 </ul>
 <blockquote>
-<p>Note: <code>get_usage_limits</code> currently returns a <strong>stub</strong> (<code>UsageLimits</code> with all
-fields empty) — the rate-limit pills render from it but show no live percentages
-until it is wired to a real source. This is the honest status; see <code>PARITY.md</code>.</p>
+<p><code>get_usage_limits</code> returns an <strong>honestly-inert</strong> <code>UsageLimits { rateLimited: false, live: false }</code> — there is no reliable local rolling-window source, so the command signals "no data" rather than guessing. The rate-limit pills grey out on startup and light up live when an in-stream <code>rate_limit_event</code> arrives (forwarded by the spawner even after the turn finalizes, pid-gated so it can't attach to a newer turn).</p>
 </blockquote>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>

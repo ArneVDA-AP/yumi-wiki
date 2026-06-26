@@ -600,6 +600,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#subagent-isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subagent isolation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#why-turn_done-exists" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1178,6 +1189,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#subagent-isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subagent isolation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#why-turn_done-exists" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1381,14 +1403,17 @@ captured bytes.</p>
 <li><code>text_delta</code> → <code>text_delta { text: delta.text }</code> (live typing).</li>
 <li><code>thinking_delta</code> → <code>thinking_delta { text: delta.thinking }</code>.</li>
 <li>other → <code>raw</code>.</li>
-<li>other inner types (<code>message_start</code>, <code>content_block_start/stop</code>, <code>message_stop</code>, …) → <code>raw</code> (safely ignorable by the UI).</li>
+<li><strong><code>message_start</code></strong> → read <code>event.message.usage</code>; emit <code>ClaudeEvent::Usage</code> with the turn's initial token snapshot (<code>inputTokens</code>, <code>outputTokens</code>, <code>cacheRead</code>, <code>cacheCreation</code>). This is what makes the token bar fill live at the start of a turn — cache tokens dominate on resumed sessions. If <code>usage</code> is absent → <code>raw</code>.</li>
+<li>other inner types (<code>content_block_start/stop</code>, <code>message_stop</code>, …) → <code>raw</code> (safely ignorable by the UI).</li>
 </ul>
 <h3 id="non-lossy-details">Non-lossy details<a class="headerlink" href="#non-lossy-details" title="Permanent link">&para;</a></h3>
 <ul>
 <li>An <code>assistant</code> line with no recognisable content blocks still yields a single <code>raw</code> event.</li>
-<li><code>tool_result</code> content is flattened: a string is used as-is; an array of <code>{type:"text", text}</code> blocks is concatenated; anything else is stringified.</li>
-<li>Unknown thinking shapes fall back from <code>delta.thinking</code> to <code>delta.text</code>.</li>
+<li><code>tool_result</code> content is polymorphic and always flattened to a string: a plain string is used as-is; an array of <code>{type:"text", text}</code> blocks is concatenated; an object is unwrapped by probing <code>content</code>, <code>output</code>, then <code>text</code> keys (each of which may itself be a string or nested array — the extraction recurses). This covers every known tool shape without leaving a raw JSON blob in the result card.</li>
+<li>Thinking text is read tolerantly: a <strong>complete</strong> <code>assistant</code> <code>thinking</code> block reads <code>thinking</code>, falling back to <code>text</code>; the streaming <code>thinking_delta</code> reads <code>delta.thinking</code> only (empty string if absent).</li>
 </ul>
+<h3 id="subagent-isolation">Subagent isolation<a class="headerlink" href="#subagent-isolation" title="Permanent link">&para;</a></h3>
+<p>Lines emitted by an in-stream subagent (the Task tool's child) carry a non-null top-level <code>parent_tool_use_id</code>. The parser routes the entire line to <code>raw</code> before any further dispatch — a subagent's <code>end_turn</code> must never finalize the main turn, and its text/tool output must never pollute the main message. The main turn (where <code>parent_tool_use_id</code> is absent or <code>null</code>) still renders the Task <code>tool_use</code> card and its <code>tool_result</code> normally.</p>
 <h3 id="why-turn_done-exists">Why <code>turn_done</code> exists<a class="headerlink" href="#why-turn_done-exists" title="Permanent link">&para;</a></h3>
 <p><code>turn_done</code> is emitted from the terminal <code>message_delta</code> — which arrives <strong>as soon
 as the answer finishes</strong> — whereas the <code>result</code> line only arrives <strong>after</strong> the
@@ -1434,7 +1459,7 @@ usage?, rateLimit?, error? }</code>.</p>
 </tr>
 <tr>
 <td><code>usage</code></td>
-<td>surface <code>{inputTokens, outputTokens, cacheRead, cacheCreation}</code> (drives the token bar)</td>
+<td>surface <code>{inputTokens, outputTokens, cacheRead, cacheCreation}</code> (drives the token bar live mid-stream — emitted from <code>message_start</code> at turn start, before any deltas arrive)</td>
 </tr>
 <tr>
 <td><code>rate_limit</code></td>

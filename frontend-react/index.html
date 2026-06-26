@@ -1431,13 +1431,14 @@
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    streamParse.ts     ClaudeEvent → ChatMessage reducer
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    themes.ts          6 themes + applyTheme
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    shortcuts.ts       global keyboard map
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>  components/
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    chat/    MessageList, MessageItem, ChatPane, ToolCard, ThinkingBlock, RateLimitPills
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    input/   PromptInput, TokenBar, MentionPopup, useDictation
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    tabs/    Sidebar, TabBar
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    panels/  GitPanel, FilesPanel, AgentsPanel
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    overlays/ Overlay, SettingsOverlay, CommandPalette, AnalyticsOverlay, ProjectPicker
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    common/  Icon, Markdown, CodeBlock, useCopy, fuzzy, hljsLanguages
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    models.ts          contextWindowFor() — per-model context-window lookup
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>  components/
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    chat/    MessageList, MessageItem, ChatPane, ToolCard, ThinkingBlock, RateLimitPills
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    input/   PromptInput, TokenBar, MentionPopup, useDictation
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    tabs/    Sidebar, TabBar
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    panels/  GitPanel, FilesPanel, AgentsPanel
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    overlays/ Overlay, SettingsOverlay, CommandPalette, AnalyticsOverlay, ProjectPicker
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    common/  Icon, Markdown, CodeBlock, useCopy, fuzzy, hljsLanguages
 </code></pre></div>
 <p><code>types.ts</code> and <code>ipc.ts</code> are the <strong>frozen contract</strong> with the Rust backend — they
 are read-only for UI work and documented on the <a href="../ipc-contract/">IPC Contract</a>
@@ -1457,7 +1458,7 @@ page. Everything else in <code>src/</code> is free to change.</p>
 <tr>
 <td><code>tabs</code></td>
 <td><code>Tab[]</code></td>
-<td>open chat tabs (each has its own messages, draft, streaming flag, model, cwd, <code>claudeSessionId</code>)</td>
+<td>open chat tabs (each has its own messages, draft, streaming flag, model, cwd, <code>claudeSessionId</code>); each tab also carries <code>lastUsage</code> (<code>inputTokens</code>, <code>outputTokens</code>, <code>cacheRead</code>, <code>cacheCreation</code>) filled live from <code>message_start</code></td>
 </tr>
 <tr>
 <td><code>activeTabId</code></td>
@@ -1521,7 +1522,7 @@ page. Everything else in <code>src/</code> is free to change.</p>
 - <code>bootstrap()</code> — load settings, install IPC listeners, load sessions/projects/usage, open the first tab.
 - <code>newTab(opts?)</code>, <code>closeTab(id)</code>, <code>setActiveTab(id)</code>, <code>renameTab(id, title)</code>, <code>setDraft(id, draft)</code>.</p>
 <p><strong>Conversation</strong>
-- <code>send(tabId, prompt)</code> — append the user message + an empty streaming assistant, then <code>spawnClaude(opts)</code>.
+- <code>send(tabId, prompt)</code> — append the user message + an empty streaming assistant, then <code>spawnClaude(opts)</code> (opts include <code>settings.routerBaseUrl</code> so the spawner can set <code>ANTHROPIC_BASE_URL</code> for routed providers).
 - <code>stop(tabId)</code> — <code>interruptClaude</code> and finalize.
 - <code>resumeSession(meta)</code> — open a past session in a new tab and load its messages from the DB.
 - <code>rollbackTo(tabId, messageId)</code> — rewind the conversation to before a user turn and reload that prompt into the draft for edit/resend, then re-persist.
@@ -1613,7 +1614,7 @@ owns <code>bootstrap()</code> and installs the keyboard shortcuts.</p>
 </tr>
 <tr>
 <td><code>RateLimitPills</code></td>
-<td>5h / 7d usage pills, colour-coded; renders nothing when usage is null</td>
+<td>5h / 7d rate-limit pills; when <code>usage.live</code> is false (no real signal yet) renders greyed <code>—</code> pills with an "unavailable" tooltip — never fake numbers; when a live <code>rate_limit_event</code> arrives (<code>usage.live = true</code>), shows real status, window type, and reset time; renders nothing when <code>usage</code> is null</td>
 </tr>
 </tbody>
 </table>
@@ -1632,7 +1633,7 @@ owns <code>bootstrap()</code> and installs the keyboard shortcuts.</p>
 </tr>
 <tr>
 <td><code>TokenBar</code></td>
-<td>thin context-usage bar (0–200k, colour-coded by the auto-compact threshold)</td>
+<td>thin context-usage bar — dynamic window via <code>contextWindowFor(tab.model)</code> (<code>models.ts</code>; 200K for Claude, 1M for Gemini, etc.); sums <code>inputTokens + cacheRead + cacheCreation + outputTokens</code>; fills live mid-stream from <code>message_start</code> usage (not only end-of-turn); colour-coded by the auto-compact threshold</td>
 </tr>
 <tr>
 <td><code>MentionPopup</code></td>

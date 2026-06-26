@@ -1180,8 +1180,11 @@
     claude --&gt;|stdout: one JSON object per line| core</code></pre>
 <ol>
 <li><strong>Tauri host (<code>yumi.exe</code>, Rust).</strong> Owns the window, the SQLite database, the
-   process registry, and all <code>#[tauri::command]</code> handlers. Entry point is
-   <code>src-tauri/src/main.rs</code> → <code>lib.rs::run()</code>.</li>
+   process registry, and all <code>#[tauri::command]</code> handlers. Also hosts
+   <code>process::guard</code> (a process-wide child-PID set that tree-kills spawned <code>claude</code>
+   processes and the thinking-proxy on panic or normal exit) and
+   <code>claude::resources</code> (sidecar resolution: <code>resource_dir()</code> first, dev
+   ancestor-walk fallback). Entry point is <code>src-tauri/src/main.rs</code> → <code>lib.rs::run()</code>.</li>
 <li><strong>WebView2 (React).</strong> The entire UI: chat, tabs, input, side panels, overlays.
    State lives in a zustand store (<code>src/lib/store.ts</code>); the UI talks to Rust only
    through the typed wrappers in <code>src/lib/ipc.ts</code>.</li>
@@ -1192,6 +1195,14 @@
 <li><strong><code>thinking-proxy.cjs</code> (optional, Node).</strong> A localhost HTTP proxy that injects
    the interleaved-thinking config into the upstream Anthropic request; the spawned
    <code>claude</code> is pointed at it via <code>ANTHROPIC_BASE_URL</code>. See <a href="../thinking-proxy/">Thinking Proxy</a>.</li>
+</ol>
+<p>!!! note "<code>ANTHROPIC_BASE_URL</code> dual-use"
+       <code>ANTHROPIC_BASE_URL</code> serves two mutually exclusive roles: when the thinking
+       proxy is active it points <code>claude</code> at the localhost proxy; when a non-Claude
+       provider is selected it points <code>claude</code> at the user's router
+       (claude-code-router / LiteLLM / OpenRouter). The two cannot be active
+       simultaneously — enabling a non-Claude provider supersedes the proxy URL.</p>
+<ol>
 <li><strong><code>yumi-mcp-bash.cjs</code> (opt-in, Node).</strong> An MCP stdio server registered with the
    spawned <code>claude</code> when the bash monitor is on, so shell runs through
    <code>mcp__yumi-bash__RunBash</code> and streams live into the tool card. See
@@ -1238,10 +1249,13 @@ terminal, so multi-step tool turns are unaffected.</p>
 </div>
 <p>After finalizing, the backend keeps <strong>draining the lingering process's stdout
 silently</strong> (so its pipe never blocks and its hooks complete) but stops emitting
-events. When the late <code>result</code> is drained it is still used — for analytics and a
-<code>claude-cost</code> side-channel event — but it is <strong>pid-gated</strong> so it can never corrupt
-a newer turn that reused the same session id. The full rationale is in
-<a href="../reliability-and-design/">Reliability &amp; Design</a>.</p>
+normal stream events. There is one exception: a trailing <code>rate_limit_event</code> (which
+the CLI emits after <code>end_turn</code>, in the order <code>end_turn → rate_limit_event →
+result</code>) is forwarded <strong>even after finalize</strong> so the rate-limit pills can update
+live — but only if this process still owns the session (pid-gated), preventing a
+lingering turn from pushing onto a newer one. When the late <code>result</code> is drained it
+is used for analytics and a <code>claude-cost</code> side-channel event, also pid-gated. The
+full rationale is in <a href="../reliability-and-design/">Reliability &amp; Design</a>.</p>
 <h2 id="the-contract-that-holds-it-together">The contract that holds it together<a class="headerlink" href="#the-contract-that-holds-it-together" title="Permanent link">&para;</a></h2>
 <p>The frontend and backend converge on a single frozen interface:</p>
 <ul>

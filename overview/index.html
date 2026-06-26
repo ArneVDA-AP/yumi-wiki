@@ -1244,7 +1244,7 @@ see <code>PLAN.md</code> at the repo root for that reconnaissance.</p>
 - <strong>MCP bash server</strong> with live output tailing into the tool card.
 - <strong>Thinking proxy</strong> for interleaved thinking on adaptive models.
 - <strong>Yumi plugin</strong> (4 agents, 8 commands, 1 guard hook).</p>
-<p><strong>Multi-provider</strong> (experimental) — a provider abstraction can target Gemini / GPT (Codex) / Kiro; only the <strong>Claude</strong> path is verified.</p>
+<p><strong>Multi-provider</strong> (experimental) — every provider drives the same <code>claude</code> binary; a non-Claude provider sets <code>ANTHROPIC_BASE_URL</code> to a user-configured router URL (claude-code-router / LiteLLM / OpenRouter). No router configured → a clear error, never a fake. The Claude path is fully verified; the routing mechanism is verified.</p>
 <h2 id="parity-tiers">Parity tiers<a class="headerlink" href="#parity-tiers" title="Permanent link">&para;</a></h2>
 <p>The build was organised into three tiers (from <code>PLAN.md</code>):</p>
 <ul>
@@ -1252,7 +1252,7 @@ see <code>PLAN.md</code> at the repo root for that reconnaissance.</p>
 <li><strong>P1 — important:</strong> implemented with lighter verification (git/files panels, command palette, analytics, rate limits, <code>@</code>-mentions, plugin). (All 🟢.)</li>
 <li><strong>P2 — parity-noted:</strong> scoped, stubbed, or honestly labelled. Most P2 items
   ended up fully built and verified (split panes, history rollback, background
-  agents, bash monitor); multi-provider is partly stubbed; licensing/payments and
+  agents, bash monitor, multi-provider router); licensing/payments and
   auto-update/VSCode companion are <strong>intentionally omitted</strong>.</li>
 </ul>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
